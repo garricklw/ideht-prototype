@@ -1,21 +1,4 @@
-<html>
-
-<head>
-    <title>Express</title>
-    <style>
-        .fullSize {
-            width: 100%;
-            height: 85%;
-        }
-    </style>
-
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Cesium.js"></script>
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-</head>
-
 <body>
-
-<h1>Express</h1>
 <div id="cesiumContainer" class="fullSize"></div>
 </body>
 
@@ -51,33 +34,9 @@
         return perc_idx;
     }
 
-    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5ZGM5YTk4MC04NDA5LTQ5ZDctOTU0NC04NzE0YTIzMjdhMTciLCJpZCI6MjI4MjgsInNjb3BlcyI6WyJhc3IiLCJnYyJdLCJpYXQiOjE1ODIxNDYxNzh9.7gErHeK84h8ZKvBsIOvZIXX2_vx4dbNO74gTGDTB6tE';
-    var osm = new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/',
-        maximumLevel: 6,
-        credit: 'MapQuest, Open Street Map and contributors, CC-BY-SA'
-    });
+    that.billboardDataSource = new Cesium.CustomDataSource('billboards');
+    that.removeListener = null;
 
-    var widget = new Cesium.Viewer('cesiumContainer', {
-        sceneMode: Cesium.SceneMode.SCENE2D,
-        imageryProvider: osm,
-        // imageryProvider: new Cesium.IonImageryProvider({assetId: 4}),
-        animation: false,
-        baseLayerPicker: false,
-        homeButton: false,
-        infoBox: false,
-        selectionIndicator: false,
-        navigationHelpButton: false,
-        timeline: false
-    });
-
-    widget.camera.setView({
-        destination: Cesium.Rectangle.fromDegrees(-140.0, 55.0, -60.0, 22.0)
-    });
-
-    billboardDataSource = new Cesium.CustomDataSource('billboards');
-
-    let removeListener = null;
     let clusters = {}; // each location can only be in one cluster, so mapping the first element id -> cluster object
     let clusterMembers = {};
     let tempBillboards = {};
@@ -121,67 +80,6 @@
         }
         billboardDataSource.clustering.pixelRange = 0;
         billboardDataSource.clustering.pixelRange = 15;
-    }
-
-    // HTML overlay for showing feature name on mouseover
-    let nameOverlay = document.createElement('div');
-    widget.container.appendChild(nameOverlay);
-    nameOverlay.style.color = 'white';
-    nameOverlay.style.display = 'none';
-    nameOverlay.style.position = 'absolute';
-    nameOverlay.style.bottom = '0';
-    nameOverlay.style.left = '0';
-    nameOverlay.style['pointer-events'] = 'none';
-    nameOverlay.style.padding = '4px';
-    nameOverlay.style.backgroundColor = 'black';
-
-    function registerHoverEvent() {
-        widget.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
-            // Pick a new feature
-            let pickedFeature = widget.scene.pick(movement.endPosition);
-            if (!pickedFeature) {
-                nameOverlay.style.display = 'none';
-                return;
-            }
-
-            // A feature was picked, so show it's overlay content
-            nameOverlay.style.display = 'block';
-            nameOverlay.style.bottom = widget.canvas.clientHeight - movement.endPosition.y + 'px';
-            nameOverlay.style.left = movement.endPosition.x + 'px';
-
-            let hovered_object = pickedFeature.id;
-            if (Array.isArray(hovered_object)) {
-                nameOverlay.textContent = "Cluster of " + hovered_object.length + " locations. (Click to expand)";
-            } else {
-                nameOverlay.textContent = hovered_object.name;
-            }
-        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-        widget.screenSpaceEventHandler.setInputAction(function onMouseClick(click) {
-            // Pick a new feature
-            let pickedFeature = widget.scene.pick(click.position);
-            if (!pickedFeature) {
-                return;
-            }
-
-            let clicked_object = pickedFeature.id;
-            if (Array.isArray(clicked_object)) {
-                let cluster_id = clicked_object[0].name;
-
-                clusters[cluster_id].billboard.show = false;
-                for (let bb of clusterMembers[cluster_id]) {
-                    let tempBB = {
-                        name: bb.name,
-                        perc_idx: bb.perc_idx,
-                        position: bb.position,
-                        billboard: {
-                            image: bb.billboard.image
-                        }
-                    };
-                    tempBillboards[bb.name] = tempBB;
-                    widget.entities.add(tempBB);
-                }
-            }
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     }
 
     function render2dLocations(locations) {
@@ -274,5 +172,3 @@
 
     fetchAndRenderLocations(true);
 </script>
-
-</html>

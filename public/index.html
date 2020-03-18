@@ -1,38 +1,162 @@
 <html>
 
 <head>
-    <title>Timeline Demo</title>
+    <title>Post List Demo</title>
+    <link rel="stylesheet" href="stylesheets/common.css">
+    <link rel="stylesheet" href="stylesheets/alert_dashboard.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
     <script src="https://d3js.org/d3.v4.js"></script>
-    <script src="components/timeline/timeline.js"></script>
+    <script src="javascripts/LoadHtmlDepends.js"></script>
+    <script src="components/post_list/PostList.js"></script>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
 
-<body>
-<h1>Timeline Demo</h1>
-<div id="timeline-widget"></div>
+<body class="bodyDefault">
+<div class="flexhorizont inheritSize">
+    <div id="alert-list" class="vertScroll"></div>
+    <div id="post-list" class="vertScroll"></div>
+    <div style="width: 55%">
+        <div id="map-container" style="height: 60%;"></div>
+        <div id="timeline-container" style="height: 60%;"></div>
+    </div>
+</div>
+<!--<div id="post-list-widget" style="width: 50%; height: 80%"></div>-->
 </body>
 
-<script>
-    /** @type {Timeline} */
-    let timelineDiv = d3.select("#timeline-widget").node();
-    let timeline = null;
+<script type="module">
+    import {AlertCard} from "./components/alert_card/AlertCard.js";
+    import {PostCard} from "./components/post_card/PostCard.js";
+    import {MapWidget} from "./components/map/MapWidget.js";
 
-    d3.csv("/data/CIMIS_Station_125.csv", function (error, data) {
-        if (error) throw error;
+    let alertListDiv = d3.select("#alert-list").node();
+    let postListDiv = d3.select("#post-list").node();
+    let mapDiv = d3.select("#map-container").node();
+    let demoDiv = d3.select("#demo-widget").node();
 
-        let dataCoords = [];
-        for (let datum of data) {
-            dataCoords.push([datum.Date, datum.Air_Temp]);
-        }
+    const baseDbUrl = "http://localhost:5000/posts/ids?datasource=";
+    new LoadHtmlDepends({
+        "components/post_list/PostList.html": "PostList",
+        "components/threat_bar/ThreatBar.html": "ThreatBar",
+        "components/alert_card/AlertCard.html": "AlertCard",
+        "components/post_card/PostCard.html": "PostCard",
+        "components/timeline/timeline.html": "Timeline",
+    }, onDependsLoad);
 
-        // 1/7/2014 03:00
-        let alerts = {
-            [new Date(2014, 0, 7, 4, 0, 0).getTime()]: "red",
-            [new Date(2014, 0, 2, 14, 0, 0).getTime()]: "orange",
-            [new Date(2014, 0, 5, 18, 0, 0).getTime()]: "yellow",
-        };
+    function hydratePostIds(dataSource, postIdCsv, onData) {
+        let dbUrl = baseDbUrl + dataSource + "&ids=" + postIdCsv;
+        fetch(dbUrl)
+            .then(data => data.text())
+            .then((text) => {
+                let postList = JSON.parse(text);
+                let postMap = postList.reduce((map, post) => {
+                    map[post["id"]] = post;
+                    return map;
+                }, {});
 
-        timeline = new Timeline(timelineDiv, dataCoords, alerts);
-    });
+                onData(postMap);
+            });
+    }
+
+    function fetchPostListData(alert_id, onData) {
+        fetch("alerts/violentposts/" + alert_id + "/5")
+            .then(data => data.text())
+            .then((text) => {
+                let postIdList = JSON.parse(text);
+                let violenceMap = {};
+
+                let sourceUrls = {};
+                for (let doc of postIdList) {
+                    let ds = doc["data_source"];
+                    let pid = doc["post_id"];
+                    sourceUrls[ds] = (ds in sourceUrls) ? (sourceUrls[ds] + "," + pid) : (pid);
+                    violenceMap[pid] = doc;
+                }
+                for (let source in sourceUrls) {
+                    hydratePostIds(source, sourceUrls[source], (hydrPosts) => {
+                        for (let postId of Object.keys(hydrPosts)) {
+                            hydrPosts[postId] = Object.assign(hydrPosts[postId], violenceMap[postId]);
+                        }
+                        onData(hydrPosts);
+                    });
+                }
+            });
+    }
+
+    function fetchAndParse(url, onData) {
+        fetchAndParseMulti([url], listData => listData.length > 0 ? onData(listData[0]) : onData());
+    }
+
+    function fetchAndParseMulti(urls, onData) {
+        let promises = urls.map((url, index) => {
+            return fetch(url)
+                .then(resp => resp.text())
+                .then((jsonstr) => {
+                    if (jsonstr.length === 0) {
+                        return;
+                    }
+                    return JSON.parse(jsonstr);
+                })
+        });
+        Promise.all(promises).then(results => onData(results))
+    }
+
+    function divider(parentList) {
+        let divider = document.createElement("div");
+        divider.classList.add("listDivider");
+        parentList.appendChild(divider);
+    }
+
+    function onDependsLoad(htmlLoader) {
+        fetchAndParse('alerts/list', (alertList) => {
+            for (let alert of alertList) {
+                let alert_user = alert["user_info"];
+
+                let spaceDiv = document.createElement("div");
+                spaceDiv.style.height = "16%";
+                spaceDiv.style.width = "100%";
+                alertListDiv.appendChild(spaceDiv);
+
+                let alertValues = {
+                    "Proximity": Math.random(), "Violence": Math.random(),
+                    "Radical": Math.random(), "Installation": Math.random()
+                };
+                new AlertCard(spaceDiv, htmlLoader, alertValues, alert_user["name"],
+                    alert_user["image_url"], "No Summary Yet");
+
+                divider(alertListDiv);
+            }
+
+            if (alertList.length === 0) {
+                // TODO show somewhere on the screen
+            } else {
+                let firstAlert = alertList[0];
+                console.log("Showing First Alert: " + firstAlert["alert_id"]);
+                fetchPostListData(firstAlert["alert_id"], (hydrPosts) => {
+                    for (let post of Object.values(hydrPosts)) {
+                        let spaceDiv = document.createElement("div");
+                        spaceDiv.style.height = "16%";
+                        spaceDiv.style.width = "100%";
+                        postListDiv.appendChild(spaceDiv);
+
+                        let alertValues = {
+                            "Violence": Math.random(), "Radical": Math.random(), "Installation": Math.random()
+                        };
+                        new PostCard(spaceDiv, htmlLoader, alertValues, post);
+                        divider(postListDiv);
+                    }
+                });
+            }
+
+
+            let shermanOaksBB = [-118.6341, 34.0011, -118.3061, 34.1967];
+            fetchAndParseMulti(['locations/locations', 'locations/facilities'], ([locs, facs]) => {
+                new MapWidget(mapDiv, shermanOaksBB, locs, facs);
+            });
+        });
+
+    }
 </script>
 
 </html>

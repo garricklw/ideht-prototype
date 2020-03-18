@@ -1,0 +1,38 @@
+<html>
+
+<head>
+    <title>Timeline Demo</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="components/timeline/timeline.js"></script>
+</head>
+
+<body>
+<h1>Timeline Demo</h1>
+<div id="timeline-widget"></div>
+</body>
+
+<script>
+    /** @type {Timeline} */
+    let timelineDiv = d3.select("#timeline-widget").node();
+    let timeline = null;
+
+    d3.csv("/data/CIMIS_Station_125.csv", function (error, data) {
+        if (error) throw error;
+
+        let dataCoords = [];
+        for (let datum of data) {
+            dataCoords.push([datum.Date, datum.Air_Temp]);
+        }
+
+        // 1/7/2014 03:00
+        let alerts = {
+            [new Date(2014, 0, 7, 4, 0, 0).getTime()]: "red",
+            [new Date(2014, 0, 2, 14, 0, 0).getTime()]: "orange",
+            [new Date(2014, 0, 5, 18, 0, 0).getTime()]: "yellow",
+        };
+
+        timeline = new Timeline(timelineDiv, dataCoords, alerts);
+    });
+</script>
+
+</html>

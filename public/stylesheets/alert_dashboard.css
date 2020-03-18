@@ -1,0 +1,11 @@
+#alert-list {
+    width: 15%;
+    height: 100%;
+    border-right: 1px solid lightslategrey
+}
+
+#post-list {
+    width: 30%;
+    height: 100%;
+    border-right: 2px groove darkgrey;
+}

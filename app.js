@@ -6,6 +6,7 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 let locationRouter = require('./routes/locations');
+let alertsRouter = require('./routes/alerts');
 
 let app = express();
 
@@ -18,6 +19,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/locations', locationRouter);
+app.use('/alerts', alertsRouter);
 
 app.listen(3000, function () {
     console.log('Example app listening on port 3000!');

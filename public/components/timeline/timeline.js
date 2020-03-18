@@ -31,24 +31,20 @@ function yValueForX(pathSel, xScaler, xCor) {
     return pos.y;
 }
 
-function Timeline(parentNode, data, alerts) {
+function Timeline(parentNode, htmlDepends, data, alerts) {
 
     let that = this;
     this.isInit = false;
     this.parseDate = d3.timeParse("%m/%d/%Y %H:%M");
 
-    fetch('components/timeline/timeline.html')
-        .then(data => data.text())
-        .then((html) => {
-            let doc = new DOMParser().parseFromString(html, "text/html");
+    let widget = htmlDepends.dependencies["Timeline"];
+    that.shadow = parentNode.attachShadow({mode: 'open'});
+    that.shadow.append(widget.documentElement.cloneNode(true));
 
-            that.shadow = parentNode.attachShadow({mode: 'open'});
-            that.shadow.append(doc.documentElement);
-            that.initGraph();
-            that.displayData(data);
-            this.isInit = true;
-            that.displayAlerts(alerts);
-        });
+    that.initGraph();
+    that.displayData(data);
+    this.isInit = true;
+    that.displayAlerts(alerts);
 
     this.displayData = function (data) {
         that.graphXData.domain(d3.extent(data, function (d) {

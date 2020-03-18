@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="stylesheets/common.css">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<style>
+    #account-image {
+        width: 70%;
+    }
+
+    .threatBar {
+        width: 80%;
+        height: 12%;
+        margin-bottom: 4px;
+    }
+
+    #post-text {
+        margin-top: 6px;
+        font-size: 14px;
+        overflow-wrap: break-word;
+    }
+</style>
+
+<body class="bodyDefault inheritSize">
+<div id="post-card" class="inheritSize">
+    <div class="flexhorizont" style="width: 100%; height: 15%; margin-top: 2%">
+        <div class="flexhorizont" style="margin-left: 26%; width: 43%">
+            <b id="user-name"></b>
+            <img id="data-source" src="" width="20px;">
+        </div>
+        <span id="created-on">Created sometime</span>
+    </div>
+    <div style="width: 100%; height: 85%" class="flexhorizont">
+        <div style="width: 20%; margin-left: 3%; margin-top: 6px">
+            <div id="threat-factors-col"></div>
+        </div>
+        <div id="text-segment" style="width: 40%; margin-left: 3%">
+            <div id="post-text">This is the post text</div>
+        </div>
+        <div style="width: 28%; margin-left: 3%">
+            <div id="account-image-box">
+                <i id="account-image-icon" class="material-icons">
+                    account_circle
+                </i>
+                <img id="account-image" src="">
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
