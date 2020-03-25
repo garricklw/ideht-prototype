@@ -9,6 +9,10 @@
     <script src="https://d3js.org/d3.v4.js"></script>
     <script src="javascripts/LoadHtmlDepends.js"></script>
     <script src="components/post_list/PostList.js"></script>
+
+    <script src="components/idehtviz/javascript/vs-min.js"></script>
+    <script src="components/idehtviz/javascript/ideht.js"></script>
+
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
@@ -18,8 +22,11 @@
     <div id="alert-list" class="vertScroll"></div>
     <div id="post-list" class="vertScroll"></div>
     <div style="width: 55%">
-        <div id="map-container" style="height: 60%;"></div>
-        <div id="timeline-container" style="height: 60%;"></div>
+        <div id="map-container" style="height: 33%;"></div>
+        <div style="height: 33%;">
+            <canvas id="network-container" style="width: 100%; height: 100%"></canvas>
+        </div>
+        <div id="timeline-container" style="height: 33%; width:98%"></div>
     </div>
 </div>
 <!--<div id="post-list-widget" style="width: 50%; height: 80%"></div>-->
@@ -29,12 +36,14 @@
     import {AlertCard} from "./components/alert_card/AlertCard.js";
     import {PostCard} from "./components/post_card/PostCard.js";
     import {MapWidget} from "./components/map/MapWidget.js";
+    import {Timeline} from "./components/timeline/timeline.js";
 
     let alertListDiv = d3.select("#alert-list").node();
     let postListDiv = d3.select("#post-list").node();
     let mapDiv = d3.select("#map-container").node();
-    let demoDiv = d3.select("#demo-widget").node();
+    let timelineDiv = d3.select("#timeline-container").node();
 
+    const baseService = "http://localhost:5000/";
     const baseDbUrl = "http://localhost:5000/posts/ids?datasource=";
     new LoadHtmlDepends({
         "components/post_list/PostList.html": "PostList",
@@ -44,8 +53,8 @@
         "components/timeline/timeline.html": "Timeline",
     }, onDependsLoad);
 
-    function hydratePostIds(dataSource, postIdCsv, onData) {
-        let dbUrl = baseDbUrl + dataSource + "&ids=" + postIdCsv;
+    function hydratePostIds(dataSource, dataset, postIdCsv, onData) {
+        let dbUrl = baseDbUrl + dataSource + "&ids=" + postIdCsv + "&dataset=" + dataset;
         fetch(dbUrl)
             .then(data => data.text())
             .then((text) => {
@@ -59,29 +68,24 @@
             });
     }
 
-    function fetchPostListData(alert_id, onData) {
-        fetch("alerts/violentposts/" + alert_id + "/5")
+    function fetchPostListData(alert_id, user_id, dataset, onData) {
+        let postUrl = baseService + "posts?alert_id=" + alert_id + "&user_ids=" + user_id + "&dataset=" + dataset;
+        fetch(postUrl)
             .then(data => data.text())
             .then((text) => {
-                let postIdList = JSON.parse(text);
-                let violenceMap = {};
-
-                let sourceUrls = {};
-                for (let doc of postIdList) {
-                    let ds = doc["data_source"];
-                    let pid = doc["post_id"];
-                    sourceUrls[ds] = (ds in sourceUrls) ? (sourceUrls[ds] + "," + pid) : (pid);
-                    violenceMap[pid] = doc;
-                }
-                for (let source in sourceUrls) {
-                    hydratePostIds(source, sourceUrls[source], (hydrPosts) => {
-                        for (let postId of Object.keys(hydrPosts)) {
-                            hydrPosts[postId] = Object.assign(hydrPosts[postId], violenceMap[postId]);
-                        }
-                        onData(hydrPosts);
-                    });
-                }
+                // let postIdList = JSON.parse(text);
+                onData(JSON.parse(text))
             });
+    }
+
+    function fetchCountData(alert_info, onData) {
+        let base_url = baseService + "/counts?alert_id=" + alert_info["alert_id"] + "&date_unit=day&filter_indiv=true&user_ids=";
+        for (let [data_source, users] of Object.entries(alert_info["user_infos"])) {
+            for (let user of users) {
+                base_url += user["id"]
+            }
+        }
+        fetchAndParse(base_url, onData)
     }
 
     function fetchAndParse(url, onData) {
@@ -111,7 +115,7 @@
     function onDependsLoad(htmlLoader) {
         fetchAndParse('alerts/list', (alertList) => {
             for (let alert of alertList) {
-                let alert_user = alert["user_info"];
+                let alert_user = alert["user_infos"]["GAB"][0];
 
                 let spaceDiv = document.createElement("div");
                 spaceDiv.style.height = "16%";
@@ -132,8 +136,11 @@
                 // TODO show somewhere on the screen
             } else {
                 let firstAlert = alertList[0];
+                let user_id = firstAlert["user_infos"]["GAB"][0]["id"];
+                let dataset = firstAlert["datasets"]["GAB"];
+
                 console.log("Showing First Alert: " + firstAlert["alert_id"]);
-                fetchPostListData(firstAlert["alert_id"], (hydrPosts) => {
+                fetchPostListData(firstAlert["alert_id"], user_id, dataset, (hydrPosts) => {
                     for (let post of Object.values(hydrPosts)) {
                         let spaceDiv = document.createElement("div");
                         spaceDiv.style.height = "16%";
@@ -147,15 +154,42 @@
                         divider(postListDiv);
                     }
                 });
-            }
+                let networkController = IDEHTViz();
+                let networkUrl = baseService + "/network?dataset=" + dataset + "&root_node=" + user_id
+                    + "&depth=2&breadth=3";
+                fetchAndParse(networkUrl, (network) => {
+                    let nodes = new Set();
+                    let links = [];
 
+                    for (let edge of network) {
+                        let source_id = edge["source_id"];
+                        let target_id = edge["target_id"];
+                        nodes.add(source_id);
+                        nodes.add(target_id);
+                        links.push({"sourceNodeId": source_id, "targetNodeId": target_id, "metaData1": 1.0});
+                    }
+                    let nodeArray = [];
+                    for (let node_id of nodes) {
+                        nodeArray.push({"id": node_id, "metaData1": 1.0});
+                    }
+                    let data = {"nodes": Array.from(nodeArray), "links": links};
+                    networkController.setupVisualization("network-container", data)
+                });
+
+                fetchCountData(firstAlert, (countData) => {
+                    let data = [];
+                    for (let [date, count] of Object.entries(countData)) {
+                        data.push([date.toString(), count])
+                    }
+                    new Timeline(timelineDiv, htmlLoader, data, {}, "%Y-%m-%d")
+                });
+            }
 
             let shermanOaksBB = [-118.6341, 34.0011, -118.3061, 34.1967];
             fetchAndParseMulti(['locations/locations', 'locations/facilities'], ([locs, facs]) => {
                 new MapWidget(mapDiv, shermanOaksBB, locs, facs);
             });
         });
-
     }
 </script>
 

@@ -1,5 +1,7 @@
 // import * as d3 from "/public/javascripts/d3";
 
+import {SizingUtils} from "../../javascripts/SizingUtils.js";
+
 function appendDotToChart(chartSel, pathSel, xScaler, dotX, dotColor) {
     chartSel.append("circle")
         .attr("class", "dot")
@@ -31,20 +33,16 @@ function yValueForX(pathSel, xScaler, xCor) {
     return pos.y;
 }
 
-function Timeline(parentNode, htmlDepends, data, alerts) {
+export function Timeline(parentNode, htmlDepends, data, alerts, dateFormat) {
 
     let that = this;
     this.isInit = false;
-    this.parseDate = d3.timeParse("%m/%d/%Y %H:%M");
+    this.parseDate = d3.timeParse(dateFormat);
+    this.parent = parentNode;
 
     let widget = htmlDepends.dependencies["Timeline"];
     that.shadow = parentNode.attachShadow({mode: 'open'});
     that.shadow.append(widget.documentElement.cloneNode(true));
-
-    that.initGraph();
-    that.displayData(data);
-    this.isInit = true;
-    that.displayAlerts(alerts);
 
     this.displayData = function (data) {
         that.graphXData.domain(d3.extent(data, function (d) {
@@ -99,11 +97,13 @@ function Timeline(parentNode, htmlDepends, data, alerts) {
 
     this.initGraph = function () {
         that.graphRootSvg = d3.select(that.shadow.querySelector("svg"));
-        that.margin = {top: 20, right: 20, bottom: 110, left: 40};
-        that.navMargin = {top: 430, right: 20, bottom: 30, left: 40};
-        that.chartWidth = +that.graphRootSvg.attr("width") - that.margin.left - that.margin.right;
-        that.height = +that.graphRootSvg.attr("height") - that.margin.top - that.margin.bottom;
-        that.navHeight = +that.graphRootSvg.attr("height") - that.navMargin.top - that.navMargin.bottom;
+        that.margin = {top: 20, right: 20, bottom: 0, left: 40};
+        that.navMargin = {top: 0, right: 20, bottom: 0, left: 40};
+        // that.margin = {top: 20, right: 20, bottom: 110, left: 40};
+        // that.navMargin = {top: 430, right: 20, bottom: 30, left: 40};
+        that.chartWidth = +that.parent.offsetWidth;
+        that.height = +that.parent.offsetHeight * 0.6;
+        that.navHeight = +that.parent.offsetHeight * 0.18;
 
         that.brush = d3.brushX()
             .extent([[0, 0], [that.chartWidth, that.navHeight]])
@@ -182,7 +182,7 @@ function Timeline(parentNode, htmlDepends, data, alerts) {
     this.initNavBox = function () {
         that.navElem = that.graphRootSvg.append("g")
             .attr("class", "context")
-            .attr("transform", "translate(" + that.navMargin.left + "," + that.navMargin.top + ")");
+            .attr("transform", "translate(" + that.navMargin.left + "," + (that.height + 45) + ")");
 
         that.navElem.append("g")
             .attr("class", "axis x-axis")
@@ -217,4 +217,9 @@ function Timeline(parentNode, htmlDepends, data, alerts) {
         that.navElem.select(".brush").call(that.brush.move, that.graphXData.range().map(t.invertX, t));
         that.updateAlertDots();
     };
+
+    that.initGraph();
+    that.displayData(data);
+    this.isInit = true;
+    that.displayAlerts(alerts);
 }

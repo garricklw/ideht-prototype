@@ -8,6 +8,7 @@
     "browserify": "^16.5.0",
     "cesium": "^1.66.0",
     "check-node-version": "^4.0.2",
+    "concat": "^1.0.3",
     "cookie-parser": "~1.4.4",
     "d3": "^5.15.0",
     "debug": "~2.6.9",

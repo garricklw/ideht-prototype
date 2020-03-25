@@ -1,0 +1,276 @@
+<!doctype html>
+
+<html>
+
+  <head>
+  
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+    <title>Templates</title>
+
+  </head>
+
+  <body>
+    
+	<template id="categoricalcolormapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricalcolormappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricalcolormappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+	<template id="categoricaltransparencymapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricaltransparencymappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricaltransparencymappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+   	<template id="categoricalsizemapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricalsizemappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricalsizemappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+   	<template id="categoricalaxismapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricalaxismappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricalaxismappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+	<template id="categoricalmodelmapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricalmodelmappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricalmodelmappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+	<template id="categoricaltexturemapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricaltexturemappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+			<button id="categoricaltexturemappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+	<template id="categoricalaxismapping" sytle="color: white; width: 200px; height: 50px;">
+		<div>
+			<div id="categoricalaxismappingProperties" class="categoricalcolormappingProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px; padding-top: 5px;">
+				<button id="categoricalaxismappingAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+	<template id="continuouscolormapping" sytle="color: white; width: 200px; height: 30px !important;">
+		<div>
+			<label style="font-size: 14px; left: 0px; width: 500px;">Range</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="rangeMin" id="rangeMin" style="position: relative; width:50px; height:24px; margin-right: 20px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="rangeMax" id="rangeMax" style="position: relative; width:50px; height:24px;">
+		</div>
+		<shorthr></shorthr>
+		<div>
+			<label style="font-size: 14px; left: 0px; width: 500px;">Color</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input id="minValueColor" class="jscolor" value="000000" style="font-size: 14px; border: 0.75pt solid white; top: 13px; left: 145px; width: 55px; height: 25px; margin-right: 20px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input id="maxValueColor" class="jscolor" value="FFFFFF" style="font-size: 14px; border: 0.75pt solid white; top: 13px; left: 145px; width: 55px; height: 25px;">
+		</div>			
+	</template>
+
+   	<template id="continuoustransparencymapping" sytle="color: white; width: 200px; height: 100px;">
+		<div>
+			<label style="font-size: 14px; left: 10px; width: 60px;">Range</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="rangeMin" id="rangeMin" style="position: relative; width:50px; height:24px; margin-right: 20px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="rangeMax" id="rangeMax" style="position: relative; width:50px; height:24px;">
+		</div>
+		<shorthr></shorthr>
+		<div>
+			<label style="font-size: 14px; left: 0px; width: 500px;">Transparency</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="minValueNumber" id="minValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="maxValueNumber" id="maxValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+		</div>			
+	</template>
+	
+	<template id="continuoussizemapping" sytle="color: white; width: 200px; height: 100px;">
+		<div>
+			<label style="font-size: 14px; left: 10px; width: 60px;">Range</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="rangeMin" id="rangeMin" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 20px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="rangeMax" id="rangeMax" style="font-size: 14px; position: relative; width:50px; height:24px;">
+		</div>
+		<shorthr></shorthr>
+		<div>
+			<label style="font-size: 14px; left: 0px; width: 500px;">Size</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="minValueNumber" id="minValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="maxValueNumber" id="maxValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+		</div>			
+	</template>
+	
+	<template id="continuousaxismapping" sytle="color: white; width: 200px; height: 100px;">
+		<div>
+			<label style="font-size: 14px; left: 10px; width: 60px;">Range</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="rangeMin" id="rangeMin" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 20px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="rangeMax" id="rangeMax" style="font-size: 14px; position: relative; width:50px; height:24px;">
+		</div>
+		<shorthr></shorthr>
+		<div>
+			<label style="font-size: 14px; left: 0px; width: 500px;">Axis</label>
+		</div>
+		<div style="padding-left: 50px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Min:</label>
+			<input type="text" name="minValueNumber" id="minValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+			<label style="font-size: 14px; left: 10px; width: 60px;">Max:</label>
+			<input type="text" name="maxValueNumber" id="maxValueNumber" style="font-size: 14px; position: relative; width:50px; height:24px; margin-right: 10px;">
+		</div>			
+	</template>
+	
+  	<template id="propertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; text-align: center; width: 200px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:75px; height:24px; margin-right: 10px;"><br>
+			<input type="text" name="value" id="value" style="position: relative; width:75px; height:24px; margin-right: 10px;"><br>
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+	
+  	<template id="customcolorpropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; float: left; text-align: center; width: 150px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<input id="value" class="jscolor" value="000000" style="font-size: 14px; border: 0.75pt solid white; top: 13px; left: 145px; width: 50px; height: 25px; margin-top: 9px; margin-right: 10px;">
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+	
+  	<template id="customtransparencypropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; float: left; text-align: center; width: 150px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<input type="text" name="value" id="value" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+
+  	<template id="customsizepropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; float: left; text-align: center; width: 150px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<input type="text" name="value" id="value" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+
+  	<template id="custommodelpropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; float: left; text-align: center; width: 150px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<select id="value" style="font-size: 14px; background-color: black; color: white; width:57px; height:29px; left: 132px; margin-top: 9px; margin-right: 10px;">
+			</select>
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+
+  	<template id="customtexturepropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="propertySettings" style="display: flex; float: left; text-align: center; width: 150px; height: 50px; padding-left: 10px;">
+			<input type="text" name="name" id="name" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<input type="text" name="value" id="value" style="position: relative; width:50px; height:24px; margin-right: 10px;"><br>
+			<button id="closeButton" class="closeButton"></button>
+		</div>
+	</template>
+
+	<template id="advancedpropertytemplate" sytle="color: white; width: 200px; height: 50px;">
+		<div id="advancedpropertySettings" style="position: relative; display: flex; text-align: center; width: 200px; height: 50px; padding-left: 10px;">
+			<select id="name" style="background-color: black; color: white; position: relative; width:75px; height:29px; margin-right: 10px; margin-top: 9px;">
+			</select>
+			<input type="text" name="value" id="value" style="position: absolute; left: 110px; width:75px; height:24px; margin-right: 10px; visibility: visible" placeholder="value"><br>
+			<input type="text" name="value" id="min" style="position: absolute; left: 95px; width:40px; height:24px; margin-right: 5px; visibility: hidden;" placeholder="min"><br>
+			<input type="text" name="value" id="max" style="position: absolute; left: 150px; width:40px; height:24px; margin-right: 10px; visibility: hidden;" placeholder="max"><br>
+			<button id="closeButton" class="closeButton" style="position: absolute; left: 200px;"></button>
+		</div>
+	</template>
+	
+	<template id="notificationtemplate" sytle="width: 300px; height: 300px;">
+		<div id="notification" style="width: 100%; height:28px">
+			<div id="notificationtext" class="notificationtext">
+			</div>
+			<div id="notificationclosebutton" class="notificationclosebutton">
+			</div>
+		</div>
+	</template>
+
+  	<template id="nodedetailstemplate" sytle="color: white; width: 250px; height: 300px;">
+		<div id="nodedetails">
+			<label style="position: relative; width: auto; padding-top: 15px; padding-bottom: 5px; color: white; ">Properties</label>
+			<div id="detailsAssetProperties" class="detailsAssetProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px">
+				<button id="nodeDetailsAddButton" class="nodeDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+		
+ 	<template id="linkdetailstemplate" sytle="color: white; width: 250px; height: 300px;">
+		<div id="linkdetails">
+			<div style="padding: 5px">
+				<label style="color: white; ">Source Node</label>
+				<select id="sourcename" class="linkDetailsSelectStyle"></select>
+			</div>
+			<div style="padding: 5px; padding-bottom: 10px;">
+				<label style="color: white; ">Target Node</label>
+				<select id="targetname" class="linkDetailsSelectStyle"></select>
+			</div>
+
+			<label style="position: relative; width: auto; padding-top: 15px; padding-bottom: 5px; color: white;">Properties</label>
+			
+			<div id="detailsAssetProperties" class="detailsAssetProperties">
+			</div>
+			<div style="text-align: left; padding-left: 20px">
+				<button id="linkDetailsAddButton" class="linkDetailsAddButton"></button>
+			</div>
+		</div>
+	</template>
+
+  </body>
+  
+</html>
