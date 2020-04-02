@@ -1,28 +1,26 @@
 import {addBarsToDiv} from "../threat_bar/ThreatBar.js";
 import {SizingUtils} from "../../javascripts/SizingUtils.js";
+import {installationColor, proximityColor, radicalColor, violenceColor} from "../../javascripts/ideht_colors.js";
 
-export function PostCard(parentNode, htmlDepends, alarmValues, socialPost) {
+export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
 
     let that = this;
 
-    const barColors = ["#6f97e1", "#e18548", "#e156a3", "#81b5e0", "#88ffff"];
-    const visibleRows = 4;
+    const visibleRows = 3;
     const dsToIcon = {
         "GAB": "images/gab_icon.png",
         "REDDIT": "images/reddit_icon.png"
     };
 
-    let threatBars = {};
-
     let widget = htmlDepends.dependencies["PostCard"];
     that.shadow = parentNode.attachShadow({mode: 'open'});
     that.shadow.append(widget.documentElement.cloneNode(true));
 
-    let threatBarList = that.shadow.getElementById("threat-factors-col");
-    addBarsToDiv(htmlDepends, threatBarList, alarmValues, barColors);
-
     let userName = that.shadow.getElementById("user-name");
-    userName.textContent = "@" + socialPost["author"]["name"];
+    userName.textContent = socialPost["author"]["hidden_name"];
+
+    let displayName = that.shadow.getElementById("display-name");
+    displayName.textContent = "@" + socialPost["author"]["name"];
 
     that.shadow.getElementById("data-source").src = dsToIcon[socialPost["data_source"]];
 
@@ -30,10 +28,8 @@ export function PostCard(parentNode, htmlDepends, alarmValues, socialPost) {
     let textSegment = that.shadow.getElementById("text-segment");
     let textDiv = that.shadow.getElementById("post-text");
     SizingUtils.runOnInit(textSegment, () => {
-        let textRowWidth = textSegment.offsetWidth;
-        let desiredWidth = visibleRows * textRowWidth;
-        let truncated = SizingUtils.truncateTextToFit(postText, textDiv, desiredWidth);
-        if (truncated !== postText) {
+        let truncated = SizingUtils.truncateTextToRows(postText, textDiv, textSegment.offsetWidth, visibleRows);
+        if (truncated.trim() !== postText) {
             truncated += "... ";
         }
         textDiv.textContent = truncated;
@@ -55,28 +51,35 @@ export function PostCard(parentNode, htmlDepends, alarmValues, socialPost) {
     let createdOnDate = new Date(0);
     createdOnDate.setTime(createdOn * 1000);
 
-    that.shadow.getElementById("created-on").textContent = dateFormat(createdOnDate);
+    that.shadow.getElementById("time-stamp").textContent = createdOnDate.toLocaleString('en', {timeZone: 'UTC'}) + " UTC";
 
-    function dateFormat(datetime) {
-        let now = new Date();
-        let diff = now.getTime() - datetime.getTime();
-        let dateString = createdOnDate.toDateString();
+    let threatFactorList = that.shadow.getElementById("threat-factor-list");
+    if (alertPost["is_proximal"] === true) {
+        threatFactorList.appendChild(threatCard("Proximity", proximityColor, "white"))
+    }
+    if (alertPost["is_installation_relevant"] === true) {
+        threatFactorList.appendChild(threatCard("Installation", installationColor))
+    }
+    if (alertPost["is_radical"] === true) {
+        threatFactorList.appendChild(threatCard("Radical", radicalColor))
+    }
+    if (alertPost["is_violent"] === true) {
+        threatFactorList.appendChild(threatCard("Violence", violenceColor, "white"))
+    }
 
-        let minutesSince = Math.floor(diff / 1000 / 60);
-        if (minutesSince < 60) {
-            return minutesSince + "m"
-        }
+    function threatCard(text, color = "lightgray", textColor = "black") {
+        let threatCard = document.createElement("div");
+        threatCard.style.backgroundColor = color;
+        threatCard.style.border = "1px solid black";
+        threatCard.style.marginRight = "4px";
 
-        let hoursSince = Math.floor(minutesSince / 60);
-        if (hoursSince < 24) {
-            return hoursSince + "h"
-        }
+        let threatText = document.createElement("div");
+        threatText.style.padding = "4px";
+        threatText.style.fontSize = "14px";
+        threatText.style.color = textColor;
+        threatText.textContent = text;
 
-        let daysSince = Math.floor(hoursSince / 24);
-        if (daysSince < 365) {
-            return dateString.substring(4, dateString.length - 5);
-        }
-
-        return dateString.substring(4);
+        threatCard.appendChild(threatText);
+        return threatCard;
     }
 }

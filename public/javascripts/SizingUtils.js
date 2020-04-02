@@ -8,11 +8,21 @@ export class SizingUtils {
         return context.measureText(text).width;
     }
 
+    static truncateTextToRows(text, textElement, rowWidth, numRows) {
+        let result = "";
+        let remainText = text;
+        for (let i = 0; i < numRows; i++) {
+            let row = this.truncateTextToFit(remainText, textElement, rowWidth);
+            result += row;
+            remainText = remainText.substring(row.length);
+        }
+        return result;
+    }
+
     static truncateTextToFit(text, textElement, targetWidth) {
         let words = text.split(" ");
         let result = "";
 
-        // TODO could do this search more efficiently
         for (let word of words) {
             let resultWithAdd = result + word + " ";
             let newWidth = SizingUtils.measureTextWidth(resultWithAdd, textElement);

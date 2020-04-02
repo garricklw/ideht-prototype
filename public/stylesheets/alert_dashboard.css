@@ -1,11 +1,28 @@
-#alert-list {
-    width: 15%;
+#overview-container {
     height: 100%;
     border-right: 1px solid lightslategrey
 }
 
 #post-list {
-    width: 30%;
     height: 100%;
     border-right: 2px groove darkgrey;
+    overflow-x: hidden;
+}
+
+.headerBox {
+    border-bottom: 1px solid grey;
+}
+
+.headerMargins {
+    margin-top: 5px;
+    margin-left: 10px;
+}
+
+.headerH1Text {
+    font-size: 22px;
+    text-decoration: underline;
+}
+
+.headerLabelText {
+    font-size: 16px;
 }

@@ -17,16 +17,51 @@
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 </head>
 
-<body class="bodyDefault">
+<body class="bodyDefault hideOverflow">
 <div class="flexhorizont inheritSize">
-    <div id="alert-list" class="vertScroll"></div>
-    <div id="post-list" class="vertScroll"></div>
-    <div style="width: 55%">
-        <div id="map-container" style="height: 33%;"></div>
-        <div style="height: 33%;">
-            <canvas id="network-container" style="width: 100%; height: 100%"></canvas>
+    <div id="overview-container" class="vertScroll" style="width: 17%; min-width: 310px;"></div>
+    <div style="width: 83%; height: 100%">
+        <div class="headerBox" style="width: 100%; height: 7%;">
+            <div class="flexhorizont headerMargins">
+                <div class="headerH1Text"><b>Threat - Data Points</b></div>
+                <div class="headerLabelText vertAlignMiddle" style="margin-left: 15px">Filters:</div>
+                <select class="textSpacer vertAlignMiddle">
+                    <option value="all">All Threats</option>
+                    <option value="proximity">Proximity</option>
+                    <option value="install">Installation</option>
+                    <option value="radical">Radicalization</option>
+                    <option value="violence">Violence</option>
+                </select>
+                <select class="textSpacer vertAlignMiddle">
+                    <option value="both">Individual & Network</option>
+                    <option value="individual">Individual</option>
+                    <option value="network">Network</option>
+                </select>
+            </div>
+            <div class="flexhorizont headerMargins">
+                <div class="headerLabelText">Sort by:</div>
+                <select class="textSpacer vertAlignMiddle">
+                    <option value="latest">Latest</option>
+                    <option value="max-threat">Max Threat</option>
+                    <option value="proximity">Proximity</option>
+                    <option value="install">Installation</option>
+                    <option value="radical">Radicalization</option>
+                    <option value="violence">Violence</option>
+                </select>
+            </div>
         </div>
-        <div id="timeline-container" style="height: 33%; width:98%"></div>
+        <div class="flexhorizont" style="width: 100%; height: 93%;">
+            <div id="post-list" class="vertScroll" style="width: 25%;"></div>
+            <div style="width: 75%">
+                <div class="flexhorizont" style="height: 67%">
+                    <div id="map-container" style="width: 100%"></div>
+                    <div style="width: 100%">
+                        <canvas id="network-container" style="width: 100%; height: 100%"></canvas>
+                    </div>
+                </div>
+                <div id="timeline-container" style="height: 33%; width:98%"></div>
+            </div>
+        </div>
     </div>
 </div>
 <!--<div id="post-list-widget" style="width: 50%; height: 80%"></div>-->
@@ -37,39 +72,26 @@
     import {PostCard} from "./components/post_card/PostCard.js";
     import {MapWidget} from "./components/map/MapWidget.js";
     import {Timeline} from "./components/timeline/timeline.js";
+    import {OverviewColumn} from "./components/overview_column/overview_column.js";
 
-    let alertListDiv = d3.select("#alert-list").node();
+    let overviewDiv = d3.select("#overview-container").node();
     let postListDiv = d3.select("#post-list").node();
     let mapDiv = d3.select("#map-container").node();
     let timelineDiv = d3.select("#timeline-container").node();
 
     const baseService = "http://localhost:5000/";
-    const baseDbUrl = "http://localhost:5000/posts/ids?datasource=";
     new LoadHtmlDepends({
         "components/post_list/PostList.html": "PostList",
         "components/threat_bar/ThreatBar.html": "ThreatBar",
         "components/alert_card/AlertCard.html": "AlertCard",
         "components/post_card/PostCard.html": "PostCard",
         "components/timeline/timeline.html": "Timeline",
+        "components/overview_column/overview_column.html": "OverviewColumn"
     }, onDependsLoad);
 
-    function hydratePostIds(dataSource, dataset, postIdCsv, onData) {
-        let dbUrl = baseDbUrl + dataSource + "&ids=" + postIdCsv + "&dataset=" + dataset;
-        fetch(dbUrl)
-            .then(data => data.text())
-            .then((text) => {
-                let postList = JSON.parse(text);
-                let postMap = postList.reduce((map, post) => {
-                    map[post["id"]] = post;
-                    return map;
-                }, {});
-
-                onData(postMap);
-            });
-    }
-
-    function fetchPostListData(alert_id, user_id, dataset, onData) {
+    function fetchPostListData(alert_id, user_id, dataset, pageOffset, onData) {
         let postUrl = baseService + "posts?alert_id=" + alert_id + "&user_ids=" + user_id + "&dataset=" + dataset;
+        postUrl += "&skip=" + (pageOffset * 20);
         fetch(postUrl)
             .then(data => data.text())
             .then((text) => {
@@ -78,14 +100,36 @@
             });
     }
 
-    function fetchCountData(alert_info, onData) {
-        let base_url = baseService + "/counts?alert_id=" + alert_info["alert_id"] + "&date_unit=day&filter_indiv=true&user_ids=";
+    function fetchCountData(alert_info, network_size, onData) {
+        let count_url = baseService + "/counts?alert_id=" + alert_info["alert_id"]
+            + "&date_unit=hour&filter_indiv=true&user_ids=";
+        let avg_url = baseService + "/counts?alert_id=" + alert_info["alert_id"]
+            + "&date_unit=hour&&filter_indiv=false&user_ids=";
         for (let [data_source, users] of Object.entries(alert_info["user_infos"])) {
             for (let user of users) {
-                base_url += user["id"]
+                count_url += user["id"];
+                avg_url += user["id"];
             }
         }
-        fetchAndParse(base_url, onData)
+        fetchAndParseMulti([count_url, avg_url], onData)
+    }
+
+    function fetchLocationData(alert_info, filter_indiv, onData) {
+        let location_url = baseService + "/locations?alert_id=" + alert_info["alert_id"] + "&user_ids=";
+        let facility_url = baseService + "/location_hydrate?ids=";
+        for (let [data_source, users] of Object.entries(alert_info["user_infos"])) {
+            for (let user of users) {
+                location_url += user["id"];
+            }
+        }
+        if (filter_indiv !== null) {
+            location_url += "&filter_indiv=" + filter_indiv
+        }
+
+        for (let loc_id of alert_info["facility_ids"]) {
+            facility_url += loc_id;
+        }
+        fetchAndParseMulti([location_url, facility_url], onData)
     }
 
     function fetchAndParse(url, onData) {
@@ -112,48 +156,46 @@
         parentList.appendChild(divider);
     }
 
+    function appendPosts(htmlLoader, hydrPosts, postDiv) {
+        for (let [a_post, s_post] of hydrPosts) {
+            let spaceDiv = document.createElement("div");
+            spaceDiv.style.height = "147px";
+            spaceDiv.style.width = "96%";
+            spaceDiv.style.margin = "8px auto";
+            spaceDiv.style.border = "1px solid lightgray";
+            postDiv.appendChild(spaceDiv);
+
+            new PostCard(spaceDiv, htmlLoader, a_post, s_post);
+        }
+    }
+
     function onDependsLoad(htmlLoader) {
         fetchAndParse('alerts/list', (alertList) => {
-            for (let alert of alertList) {
-                let alert_user = alert["user_infos"]["GAB"][0];
-
-                let spaceDiv = document.createElement("div");
-                spaceDiv.style.height = "16%";
-                spaceDiv.style.width = "100%";
-                alertListDiv.appendChild(spaceDiv);
-
-                let alertValues = {
-                    "Proximity": Math.random(), "Violence": Math.random(),
-                    "Radical": Math.random(), "Installation": Math.random()
-                };
-                new AlertCard(spaceDiv, htmlLoader, alertValues, alert_user["name"],
-                    alert_user["image_url"], "No Summary Yet");
-
-                divider(alertListDiv);
-            }
-
             if (alertList.length === 0) {
                 // TODO show somewhere on the screen
             } else {
-                let firstAlert = alertList[0];
-                let user_id = firstAlert["user_infos"]["GAB"][0]["id"];
+                let firstAlert = alertList[1];
+                let user_info = firstAlert["user_infos"]["GAB"][0];
+                let user_id = user_info["id"];
                 let dataset = firstAlert["datasets"]["GAB"];
 
-                console.log("Showing First Alert: " + firstAlert["alert_id"]);
-                fetchPostListData(firstAlert["alert_id"], user_id, dataset, (hydrPosts) => {
-                    for (let post of Object.values(hydrPosts)) {
-                        let spaceDiv = document.createElement("div");
-                        spaceDiv.style.height = "16%";
-                        spaceDiv.style.width = "100%";
-                        postListDiv.appendChild(spaceDiv);
+                new OverviewColumn(overviewDiv, htmlLoader, firstAlert);
 
-                        let alertValues = {
-                            "Violence": Math.random(), "Radical": Math.random(), "Installation": Math.random()
-                        };
-                        new PostCard(spaceDiv, htmlLoader, alertValues, post);
-                        divider(postListDiv);
+                console.log("Showing First Alert: " + firstAlert["alert_id"]);
+                let visiblePostPages = 0;
+                fetchPostListData(firstAlert["alert_id"], user_id, dataset, 0, (hydrPosts) => {
+                    appendPosts(htmlLoader, hydrPosts, postListDiv);
+                    visiblePostPages += 1;
+                });
+                postListDiv.addEventListener("scroll", (ev) => {
+                    if ((postListDiv.scrollTop + postListDiv.offsetHeight) >= postListDiv.scrollHeight) {
+                        fetchPostListData(firstAlert["alert_id"], user_id, dataset, visiblePostPages, (hydrPosts) => {
+                            appendPosts(htmlLoader, hydrPosts, postListDiv);
+                            visiblePostPages += 1;
+                        });
                     }
                 });
+
                 let networkController = IDEHTViz();
                 let networkUrl = baseService + "/network?dataset=" + dataset + "&root_node=" + user_id
                     + "&depth=2&breadth=3";
@@ -176,19 +218,27 @@
                     networkController.setupVisualization("network-container", data)
                 });
 
-                fetchCountData(firstAlert, (countData) => {
-                    let data = [];
+                // 237 is the size of the network, eventually this needs to be stored and looked up from somewhere
+                fetchCountData(firstAlert, 237, ([countData, avgData]) => {
+                    let lines = [];
+                    let countPoints = [];
+                    let avgPoints = [];
                     for (let [date, count] of Object.entries(countData)) {
-                        data.push([date.toString(), count])
+                        countPoints.push([date.toString(), count])
                     }
-                    new Timeline(timelineDiv, htmlLoader, data, {}, "%Y-%m-%d")
+                    for (let [date, count] of Object.entries(avgData)) {
+                        avgPoints.push([date.toString(), count])
+                    }
+                    lines.push(countPoints, avgPoints);
+
+                    new Timeline(timelineDiv, htmlLoader, lines, {}, "%Y-%m-%d_%H")
+                });
+
+                let shermanOaksBB = [-118.6, 33.66, -118.0, 34.2];
+                fetchLocationData(firstAlert, null, ([locs, facs]) => {
+                    new MapWidget(mapDiv, shermanOaksBB, locs, facs);
                 });
             }
-
-            let shermanOaksBB = [-118.6341, 34.0011, -118.3061, 34.1967];
-            fetchAndParseMulti(['locations/locations', 'locations/facilities'], ([locs, facs]) => {
-                new MapWidget(mapDiv, shermanOaksBB, locs, facs);
-            });
         });
     }
 </script>

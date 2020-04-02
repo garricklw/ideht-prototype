@@ -42,7 +42,7 @@ var ForceDirectedLayout = function (diameter, layoutManager, perspective) {
 		
 		that.springyLayout = new Springy.Layout.ForceDirected(that.springyGraph,
 				  400.0, // Spring stiffness
-				  6400.0, // Node repulsion
+				  12800.0, // Node repulsion
 				  0.5 // Damping
 				);
 				
@@ -142,13 +142,14 @@ var ForceDirectedLayout = function (diameter, layoutManager, perspective) {
 			if (e.data.label == nodeId) {
 				that.nodeLocations[nodeId] = nodePosition;
 				var point = that.springyLayout.point(e);
-				point.m = 1000000;
+				//point.m = 1000000;
 				point.p.x = nodePosition.x;
 				point.p.y = nodePosition.y;
 				point.p.z = nodePosition.z;
 				if (!that.layoutManager.getPerspective()) {
-					point.p.y = nodePosition.z;
-					point.p.z = nodePosition.y;
+					point.p.x = nodePosition.x;
+					point.p.y = 0.0;
+					point.p.z = nodePosition.z;
 				}
 			}
 		});

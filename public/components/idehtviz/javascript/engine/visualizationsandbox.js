@@ -56,7 +56,7 @@ var VisualizationSandbox = function() {
 	
 	this.layoutScale = 2.0;
 	
-	this.perspective = true;
+	this.perspective = false;
 
 	this.selectedVisualizationSetup = null;
 	this.selectedDataset = null;
@@ -183,8 +183,8 @@ var VisualizationSandbox = function() {
 		that.renderer.shadowMapBias = 0.001;
 		that.renderer.shadowMapDarkness = 1.0;
 
-		that.renderer.domElement.addEventListener( 'mousewheel', that.mouseWheel.bind(that), false );
-		that.renderer.domElement.addEventListener( 'DOMMouseScroll', that.mouseWheel.bind(that), false ); // firefox
+		//that.renderer.domElement.addEventListener( 'mousewheel', that.mouseWheel.bind(that), false );
+		//that.renderer.domElement.addEventListener( 'DOMMouseScroll', that.mouseWheel.bind(that), false ); // firefox
 
 		that.cameraSetup = new CameraSetup(0, 0, 0, 0, 0, 0, 1.0); //CameraSetup
 
@@ -194,7 +194,7 @@ var VisualizationSandbox = function() {
 		//that.scene.add(that.reflectionCamera);
 
 		that.controls = new THREE.OrbitControls(that.camera, that.canvas);
-
+		
 		that.transformControls = null;//new THREE.TransformControls( that.camera, that.renderer.domElement );
 
 //		that.transformControls.addEventListener("change", that.render.bind(that));
@@ -228,6 +228,9 @@ var VisualizationSandbox = function() {
 		} else {
 			that.addVisualizationSetup(VisualizationSetup.prototype.getDefault());
 		}
+
+		that.setPerspective(that.perspective);
+
 		that.render.call(that);
 				
 	};
@@ -431,7 +434,7 @@ var VisualizationSandbox = function() {
 		
 	};
 
-	var zoom = 0.02;
+	var zoom = 1.0;
 	this.mouseWheel = function ( event ) {
 		if (!that.perspective) {
 
@@ -445,19 +448,17 @@ var VisualizationSandbox = function() {
 			} else if ( event.detail ) { // Firefox
 				delta = - event.detail / 3;
 			}
-
+			
 			var width = that.camera.right / zoom;
 			var height = that.camera.top / zoom;
 
-			if (zoom > delta * 0.001) {
-				zoom -= delta * 0.001;
-			}
-
+			zoom -= delta * 0.1;
+					
 			that.camera.left = -zoom*width;
 			that.camera.right = zoom*width;
 			that.camera.top = zoom*height;
 			that.camera.bottom = -zoom*height;
-
+						
 			that.camera.updateProjectionMatrix();
 
 		}
@@ -1116,8 +1117,8 @@ var VisualizationSandbox = function() {
 			//that.camera = new THREE.PerspectiveCamera(45, that.getWidth() / that.getHeight(), 1, 1000);
 			//that.camera.updateProjectionMatrix();
 			//that.controls = new THREE.OrbitControls(that.camera, that.canvas);
-			that.controls.noRotate = false;
-			that.controls.noZoom = false;
+			that.controls.noRotate = true;
+			that.controls.zoom = false;
 			that.setCameraSetup(new CameraSetup(0, -100, 100, 0, 0, 0, 1.0));
 		} else {
 			that.perspective = false;
@@ -1127,8 +1128,9 @@ var VisualizationSandbox = function() {
 			//that.camera.updateProjectionMatrix();
 			//that.controls = new THREE.OrbitControls(that.camera, that.canvas);
 			that.controls.noRotate = true;
-			that.controls.noZoom = true;
-			that.setCameraSetup(new CameraSetup(0, 0, 100, 0, 0, 0, 5.0));
+			that.controls.zoom = false;
+			that.controls.panSpeed = 0.0001;
+			that.setCameraSetup(new CameraSetup(0, 100, 0, 0, 0, 0, 1.0));
 		}
 		if (that.selectedDataset != null) {
 			that.layoutManager.setDatasetLayout(that.selectedDataset, new ForceDirectedLayout(100, that.layoutManager, that.perspective));
@@ -1306,8 +1308,12 @@ var VisualizationSandbox = function() {
 			that.camera.lookAt(new THREE.Vector3(that.cameraSetup.getTargetX(), that.cameraSetup.getTargetY(), that.cameraSetup.getTargetZ()));
 		} catch (err) {}
 
-		that.camera.rotation.y = -Math.PI/2.0;
+		if (that.perspective) {
+			that.camera.rotation.y = -Math.PI/2.0;	
+		}
+		
 		that.camera.zoom = cameraSetup.getZoom();
+		that.camera.updateProjectionMatrix();
 		
 	};
 
@@ -1449,8 +1455,8 @@ var VisualizationSandbox = function() {
 				var diagonal = 20.0;
 				
 				var centerX = (vector.x+vector2.x)/2.0;
-				var centerY = (vector.y+vector2.y)/2.0;
-				var centerZ = diagonal/2.0;
+				//var centerY = diagonal;
+				var centerZ = (vector.y+vector2.y)/2.0;
 				
 				//that.selectionCube.lookAt(that.camera);
 				that.selectionCube.scale.x = width;
@@ -1772,11 +1778,11 @@ var VisualizationSandbox = function() {
 					that.mouseDownObjectName = that.INTERSECTED.getId();
 				}
 			} else {
-				if (that.detectLeftButton(event)) {
+				if (!that.detectLeftButton(event)) {
 					that.lastContext = null;
-				} else {
+					that.setSelectedNodes(new Array());
 					that.setTransformEnabled(that.INTERSECTED, false);
-				}
+				} 
 			}
 
 		}			
@@ -1812,6 +1818,7 @@ var VisualizationSandbox = function() {
 				that.transformControls = null;
 			}
 			that.transformControls = new THREE.TransformControls(that, that.camera, that.renderer.domElement, that.mouse, that.perspective, false );
+			that.transformControls.setSize(0.5);
 			that.scene.add(that.transformControls);
 			that.transformControls.attach(obj.getVisualizationObject());
 		} else {
@@ -1828,7 +1835,7 @@ var VisualizationSandbox = function() {
 	
 	this.onMouseWheel = function(event) {
 
-		//event.preventDefault();
+		event.preventDefault();
 	
 		if (that.perspective == false) {
 		
@@ -1847,7 +1854,9 @@ var VisualizationSandbox = function() {
 			} else {
 				that.camera.zoom = Math.max( 0, Math.min( Infinity, this.camera.zoom * 0.95 ) );
 			}
-
+			
+			that.camera.updateProjectionMatrix();
+			
 		}
 		
 	};
@@ -2053,11 +2062,11 @@ var VisualizationSandbox = function() {
 		if (that.controls != undefined && that.controls != null) {
 			if (!on) {
 				if (that.perspective == true) {
-					that.controls.noRotate = true;
+					that.controls.noRotate = false;
 				}
 			} else {
 				if (that.perspective == true) {
-					that.controls.noRotate = false;
+					that.controls.noRotate = true;
 				}
 			}
 		}
@@ -2223,8 +2232,12 @@ var VisualizationSandbox = function() {
 		position = position.multiplyScalar(1.0/that.layoutScale);
 		for (var selectedNodeId in that.selectedNodes) {
 			var tempPos = that.selectedNodePositions[selectedNodeId].clone();
-			tempPos.add(position);
-			that.layoutManager.getDatasetLayout(that.selectedDataset).setNodeLocation(selectedNodeId, tempPos);
+			if (!that.perscpective) {
+				tempPos.add(new THREE.Vector3(position.x, 0.0, position.z));
+			} else {
+				tempPos.add(position);
+			}
+			that.setNodePosition(that.selectedDataset, selectedNodeId, tempPos);
 		}
 	
 	};
@@ -2301,7 +2314,7 @@ var VisualizationSandbox = function() {
 		if (datasetId != undefined) {
 			if (that.datasetVSObjects[datasetId][nodeId] != undefined && that.datasetVSObjects[datasetId][nodeId] != null) {
 				if (!that.perspective) {
-					that.datasetVSObjects[datasetId][nodeId].applyPosition(new THREE.Vector3(nodePosition.x, nodePosition.y, nodePosition.z));
+					that.datasetVSObjects[datasetId][nodeId].applyPosition(new THREE.Vector3(nodePosition.x, 0.0, nodePosition.y));
 				} else {
 					that.datasetVSObjects[datasetId][nodeId].applyPosition(nodePosition);
 				}
@@ -2322,23 +2335,19 @@ var VisualizationSandbox = function() {
 			var connection = that.datasets[datasetId].getConnection(cleanConnectionId);
 			var sourceId = connection.getSourceId();
 			var targetId = connection.getTargetId();
-			if (sourceId > targetId) {
-				sourcePos.x += 0.15;
-				sourcePos.y += 0.0;
-				sourcePos.z += 0.15;
-				targetPos.x += 0.15;
-				targetPos.y += 0.0;
-				targetPos.z += 0.15;
-			} else {
-				sourcePos.x -= 0.15;
-				sourcePos.y -= 0.0;
-				sourcePos.z -= 0.15;
-				targetPos.x -= 0.15;
-				targetPos.y -= 0.0;
-				targetPos.z -= 0.15;
-			}
+			var X = targetPos.x-sourcePos.x;
+			var Y = targetPos.y-sourcePos.y;
+			var distance = 0.25;
+			var newVec = new THREE.Vector3();
+			newVec.x = X*Math.cos(Math.PI/2.0)-Y*Math.sin(Math.PI/2.0);
+			newVec.y = X*Math.sin(Math.PI/2.0)+Y*Math.cos(Math.PI/2.0);
+			newVec.z = 0.0;
+			newVec.normalize();
+			newVec.multiplyScalar(distance);
+			sourcePos.add(newVec);
+			targetPos.add(newVec);
 			if (!that.perspective) {
-				that.datasetVSObjects[datasetId][connectionId].applyPosition(new THREE.Vector3(sourcePos.x, sourcePos.y, 0.0), new THREE.Vector3(targetPos.x, targetPos.y, 0.0));			
+				that.datasetVSObjects[datasetId][connectionId].applyPosition(new THREE.Vector3(sourcePos.x, 0.0, sourcePos.y), new THREE.Vector3(targetPos.x, 0.0, targetPos.y));			
 			} else {
 				that.datasetVSObjects[datasetId][connectionId].applyPosition(sourcePos, targetPos);			
 			}

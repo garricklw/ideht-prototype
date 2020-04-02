@@ -1,7 +1,21 @@
-.line {
+.line0 {
     fill: none;
     stroke: steelblue;
     stroke-width: 1.5px;
+}
+
+.line1 {
+    fill: none;
+    stroke: crimson;
+    stroke-width: 1.5px;
+}
+
+.y-axis0 {
+    stroke: steelblue;
+}
+
+.y-axis1 {
+    stroke: crimson;
 }
 
 .zoom {

@@ -23,21 +23,11 @@ client.connect(function (err) {
     assert.equal(null, err);
     console.log("Connected successfully to server");
 
-    const gab_db = client.db("gab_posts");
-    gab_post_coll = gab_db.collection("posts");
-
-    countAlertPostsByDay(gab_post_coll);
-
     const alert_db = client.db("alerts");
     alerts_coll = alert_db.collection("alerts");
     violence_val_coll = alert_db.collection("violence_vals")
 });
 
-function countAlertPostsByDay(gab_post_coll) {
-    gab_post_coll.find({"dataset": "WayneW67_interact_crawl"}).toArray(function (err, docs) {
-
-    });
-}
 
 /* GET location lookup. */
 router.get('/list', function (req, res, next) {

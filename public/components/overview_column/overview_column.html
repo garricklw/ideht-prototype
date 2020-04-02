@@ -1,0 +1,122 @@
+<link rel="stylesheet" href="stylesheets/common.css">
+<style>
+    #user-overview-box {
+        padding-left: 10px;
+        padding-top: 5px;
+    }
+
+    #account-image-box {
+        width: 18%;
+    }
+
+    #account-image {
+        width: 100%;
+    }
+
+    #bar-graph-div {
+        margin-left: 5px;
+        margin-right: 5px;
+        overflow: hidden;
+    }
+
+    .textButton {
+        margin-top: 25%;
+        margin-right: 5px;
+        font-size: 15px;
+        color: darkgray;
+    }
+
+    .textButton:hover {
+        cursor: pointer;
+    }
+
+    .cardText {
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .cardH1Text {
+        font-size: 22px;
+        text-decoration: underline;
+    }
+
+    .cardH2Text {
+        font-size: 17px;
+        text-decoration: underline;
+    }
+
+    .cardL2Text {
+        font-size: 17px;
+    }
+
+    .dividerMargins {
+        margin-top: 4px;
+        margin-bottom: 4px;
+    }
+
+    .headerMargins {
+        margin-top: 10px;
+        margin-left: 10px;
+    }
+
+    .h2Margins {
+        margin-top: 10px;
+        margin-left: 20px;
+    }
+</style>
+
+<body class="bodyDefault inheritSize rel">
+<div id="user-overview-box">
+    <div class="flexhorizont">
+        <img id="alert-image" src="images/icons8-error-96.png">
+        <div id="user-name" class="centerAlignText cardText"></div>
+    </div>
+    <div id="alert-level" class="cardL2Text"><b>Level 3</b></div>
+    <div id="alert-date" class="cardL2Text"></div>
+</div>
+<div class="listDivider dividerMargins"></div>
+
+<div class="flexhorizont headerMargins">
+    <div><b class="cardH1Text">Threat Overview</b></div>
+    <select id="count-source" style="margin: 3px auto">
+        <option value="individual">Individual</option>
+        <option value="network">Network</option>
+    </select>
+</div>
+<div id="bar-graph-div" style="height: 25%; margin-left: 5px"></div>
+<div class="listDivider dividerMargins"></div>
+
+<div><b class="cardH1Text headerMargins">Profile Overview</b></div>
+<div class="flexhorizont h2Margins">
+    <div class="cardH2Text">Identifier:</div>
+    <div id="user-identifier" class="textSpacer vertAlignMiddle">Wayne</div>
+</div>
+<div class="flexhorizont h2Margins">
+    <div class="cardH2Text"># of Accounts:</div>
+    <div id="num-accounts" class="textSpacer vertAlignMiddle">1</div>
+</div>
+<div class="flexhorizont h2Margins">
+    <div class="cardH2Text">Platforms:</div>
+    <div id="platforms-list" class="textSpacer vertAlignMiddle">Gab</div>
+</div>
+
+<div id="see-profile-details" class="rightAlignText textButton">
+    See Details >>
+</div>
+<div class="listDivider dividerMargins"></div>
+
+<div><b class="cardH1Text headerMargins">Related Alerts Overview</b></div>
+<div class="flexhorizont h2Margins">
+    <div class="cardH2Text"># of Related Alerts:</div>
+    <div id="num-related-alerts" class="textSpacer vertAlignMiddle">2</div>
+</div>
+<div class="flexhorizont h2Margins">
+    <div class="cardH2Text">Original Alert Date:</div>
+    <div id="original-alert-date" class="textSpacer vertAlignMiddle">2/20/2020</div>
+</div>
+<div id="see-related-alerts" class="abs textButton" style="right: 8px; bottom: 8px;">
+    See Related Alerts >>
+</div>
+
+</body>

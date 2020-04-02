@@ -355,7 +355,7 @@ var VSNode = function () {
 		this.getVisualizationObject().position = tempPosition;
 		this.getSelectionObject().position = tempPosition;
 		this.getHighlightingObject().position = tempPosition;	
-		var tempPosition2 = new THREE.Vector3(this.position.x*this.layoutScale, this.position.y*this.layoutScale, this.position.z*this.layoutScale);
+		var tempPosition2 = new THREE.Vector3(this.position.x*this.layoutScale, this.position.y*this.layoutScale+3.0, this.position.z*this.layoutScale);
 		this.getLabelSprite().position = tempPosition2;
 
 	};

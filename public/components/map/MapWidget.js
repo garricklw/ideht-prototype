@@ -6,7 +6,8 @@
  *
  * @param parentNodeId
  * @param focusBB [west, south, east, north]
- * @param locationObjs
+ * @param locationObjs location -> alert_post_id
+ * @param facilityObjs list[location]
  * @constructor
  */
 export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
@@ -29,8 +30,10 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
         baseLayerPicker: false,
         homeButton: false,
         infoBox: false,
+        sceneModePicker: false,
         selectionIndicator: false,
         navigationHelpButton: false,
+        fullscreenButton: false,
         timeline: false
     });
 
@@ -87,18 +90,18 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
 
     function render2dLocations(locations, facilities) {
         let pinBuilder = new Cesium.PinBuilder();
-        for (let location of locations) {
+        for (let location of Object.values(locations)) {
             that.widget.entities.add({
-                name: location["search_str"],
+                name: location["common_names"][0],
                 position: Cesium.Cartesian3.fromDegrees(location["lon"], location["lat"]),
                 billboard: {
-                    image: pinBuilder.fromColor(Cesium.Color.GREY, 48).toDataURL()
+                    image: pinBuilder.fromColor(Cesium.Color.fromBytes(0, 128, 0), 48).toDataURL()
                 }
             });
         }
         for (let facility of facilities) {
             that.widget.entities.add({
-                name: facility["search_str"],
+                name: facility["common_names"][0],
                 position: Cesium.Cartesian3.fromDegrees(facility["lon"], facility["lat"]),
                 billboard: {
                     image: "images/icons8-organization-24.png"

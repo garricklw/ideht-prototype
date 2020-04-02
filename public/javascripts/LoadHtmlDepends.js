@@ -10,6 +10,10 @@ class LoadHtmlDepends {
     // Map of local dependency URL -> dependency
     // don't re-use dependency names, duh.
     constructor(dependencies, onLoad) {
+        this.loadDepends(dependencies, onLoad)
+    }
+
+    loadDepends(dependencies, onLoad) {
         let promises = Object.keys(dependencies).map(depUrl => fetch(depUrl)
             .then(resp => resp.text())
             .then((html) => {
@@ -18,5 +22,19 @@ class LoadHtmlDepends {
             })
         );
         Promise.all(promises).then((_) => onLoad(this))
+    }
+
+    attachShadow(dependency, parentNode) {
+        let widget = this.dependencies[dependency];
+        let checkExists = parentNode.shadowRoot;
+        if (checkExists) {
+            checkExists.innerHTML = "";
+            checkExists.append(widget.documentElement.cloneNode(true));
+            return checkExists
+        } else {
+            let shadow = parentNode.attachShadow({mode: 'open'});
+            shadow.append(widget.documentElement.cloneNode(true));
+            return shadow;
+        }
     }
 }

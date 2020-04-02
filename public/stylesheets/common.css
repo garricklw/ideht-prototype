@@ -49,8 +49,17 @@
     margin-right: auto;
 }
 
+.vertAlignMiddle {
+    display: flex;
+    align-self: center;
+}
+
 .centerAlignText {
     text-align: center;
+}
+
+.rightAlignText {
+    text-align: right;
 }
 
 .clickable:hover {
@@ -72,6 +81,10 @@
     font-family: 'Arial', sans-serif;
 }
 
+.hideOverflow {
+    overflow: hidden;
+}
+
 .inheritSize {
     width: 100%;
     height: 100%;
@@ -89,4 +102,14 @@
     width: 100%;
     height: 1px;
     background-color: grey;
+}
+
+.textSpacer {
+    margin-left: 5px;
+}
+
+.textEllipsis {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
