@@ -41,11 +41,6 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
         destination: Cesium.Rectangle.fromDegrees(focusBB[0], focusBB[1], focusBB[2], focusBB[3])
     });
 
-    that.widget.container.appendChild(nameOverlayElem);
-    registerHoverEvent(that.widget, nameOverlayElem);
-
-    render2dLocations(locationObjs, facilityObjs);
-
     function nameOverlay() {
         // HTML overlay for showing feature name on mouseover
         let nameOverlay = document.createElement('div');
@@ -88,9 +83,11 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     }
 
-    function render2dLocations(locations, facilities) {
+    that.render2dLocations = function(locations, facilities) {
+        that.widget.entities.removeAll();
+
         let pinBuilder = new Cesium.PinBuilder();
-        for (let location of Object.values(locations)) {
+        for (let location of locations) {
             that.widget.entities.add({
                 name: location["common_names"][0],
                 position: Cesium.Cartesian3.fromDegrees(location["lon"], location["lat"]),
@@ -108,5 +105,13 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs) {
                 }
             });
         }
-    }
+    };
+
+    that.widget.container.appendChild(nameOverlayElem);
+    registerHoverEvent(that.widget, nameOverlayElem);
+    that.render2dLocations(locationObjs, facilityObjs);
+
+    return ({
+        render2dLocations: that.render2dLocations
+    });
 }

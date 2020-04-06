@@ -2213,13 +2213,13 @@ var VisualizationSandbox = function() {
 				for (var objectId in that.datasetVSObjects[datasetId]) {
 					var obj = that.datasetVSObjects[datasetId][objectId];
 					that.datasetVSObjects[datasetId][objectId].applyLayoutScale(that.layoutScale);
-					if ((obj.getIsConnection() && that.selectedVisualizationSetup.getShowConnectionLabels()) || (!obj.getIsConnection() && that.selectedVisualizationSetup.getShowNodeLabels())) {			
-						that.removeFromScene(obj.getLabelSprite().name);
-						obj.updateLabel(that.modelRepository, [that.backgroundColorRGB[0], that.backgroundColorRGB[1], that.backgroundColorRGB[2], 0.0], [obj.labelColor[0], obj.labelColor[1], obj.labelColor[2], 1.0], obj.getLabelSprite().visible, that.layoutScale);
-						if (that.scene.getObjectByName(obj.getVisualizationObject().name) != undefined) {
-							that.scene.add(obj.getLabelSprite());
-						}
-					}
+					// if ((obj.getIsConnection() && that.selectedVisualizationSetup.getShowConnectionLabels()) || (!obj.getIsConnection() && that.selectedVisualizationSetup.getShowNodeLabels())) {
+					// 	that.removeFromScene(obj.getLabelSprite().name);
+					// 	obj.updateLabel(that.modelRepository, [that.backgroundColorRGB[0], that.backgroundColorRGB[1], that.backgroundColorRGB[2], 0.0], [obj.labelColor[0], obj.labelColor[1], obj.labelColor[2], 1.0], obj.getLabelSprite().visible, that.layoutScale);
+					// 	if (that.scene.getObjectByName(obj.getVisualizationObject().name) != undefined) {
+					// 		that.scene.add(obj.getLabelSprite());
+					// 	}
+					// }
 				}
 			}
 		

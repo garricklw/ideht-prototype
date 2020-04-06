@@ -25,28 +25,28 @@
             <div class="flexhorizont headerMargins">
                 <div class="headerH1Text"><b>Threat - Data Points</b></div>
                 <div class="headerLabelText vertAlignMiddle" style="margin-left: 15px">Filters:</div>
-                <select class="textSpacer vertAlignMiddle">
+                <select id="threat-factor-select" class="textSpacer vertAlignMiddle">
                     <option value="all">All Threats</option>
-                    <option value="proximity">Proximity</option>
-                    <option value="install">Installation</option>
-                    <option value="radical">Radicalization</option>
-                    <option value="violence">Violence</option>
+                    <option value="is_proximal">Proximity</option>
+                    <option value="is_installation_relevant">Installation</option>
+                    <option value="is_radical">Radicalization</option>
+                    <option value="is_violent">Violence</option>
                 </select>
-                <select class="textSpacer vertAlignMiddle">
+                <select id="indiv-select" class="textSpacer vertAlignMiddle">
                     <option value="both">Individual & Network</option>
-                    <option value="individual">Individual</option>
-                    <option value="network">Network</option>
+                    <option value="true">Individual</option>
+                    <option value="false">Network</option>
                 </select>
             </div>
             <div class="flexhorizont headerMargins">
                 <div class="headerLabelText">Sort by:</div>
-                <select class="textSpacer vertAlignMiddle">
-                    <option value="latest">Latest</option>
-                    <option value="max-threat">Max Threat</option>
-                    <option value="proximity">Proximity</option>
-                    <option value="install">Installation</option>
-                    <option value="radical">Radicalization</option>
-                    <option value="violence">Violence</option>
+                <select id="sort-by-select" class="textSpacer vertAlignMiddle">
+                    <option value="created_day">Latest</option>
+                    <option value="max_threat">Max Threat</option>
+                    <option value="proximity_val">Proximity</option>
+                    <option value="install_relev_val">Installation</option>
+                    <option value="radical_val">Radicalization</option>
+                    <option value="violence_val">Violence</option>
                 </select>
             </div>
         </div>
@@ -73,11 +73,13 @@
     import {MapWidget} from "./components/map/MapWidget.js";
     import {Timeline} from "./components/timeline/timeline.js";
     import {OverviewColumn} from "./components/overview_column/overview_column.js";
+    import {threatColorMap, threatRgbMap, individualRgb, networkRgb} from "./javascripts/ideht_colors.js";
 
     let overviewDiv = d3.select("#overview-container").node();
     let postListDiv = d3.select("#post-list").node();
     let mapDiv = d3.select("#map-container").node();
     let timelineDiv = d3.select("#timeline-container").node();
+    let networkCanvas = d3.select("#network-container").node();
 
     const baseService = "http://localhost:5000/";
     new LoadHtmlDepends({
@@ -89,29 +91,31 @@
         "components/overview_column/overview_column.html": "OverviewColumn"
     }, onDependsLoad);
 
-    function fetchPostListData(alert_id, user_id, dataset, pageOffset, onData) {
+    function fetchPostListData(alert_id, user_id, dataset, pageOffset, sortBy, filterThreatFac, filterIndiv, onData) {
         let postUrl = baseService + "posts?alert_id=" + alert_id + "&user_ids=" + user_id + "&dataset=" + dataset;
         postUrl += "&skip=" + (pageOffset * 20);
-        fetch(postUrl)
-            .then(data => data.text())
-            .then((text) => {
-                // let postIdList = JSON.parse(text);
-                onData(JSON.parse(text))
-            });
+        if (sortBy != null) {
+            postUrl += "&sort_by=" + sortBy;
+        }
+        if (filterThreatFac != null) {
+            postUrl += "&filter_threat_fac=" + filterThreatFac;
+        }
+        if (filterIndiv != null) {
+            postUrl += "&filter_is_indiv=" + filterIndiv;
+        }
+
+        fetchAndParse(postUrl, onData);
     }
 
-    function fetchCountData(alert_info, network_size, onData) {
-        let count_url = baseService + "/counts?alert_id=" + alert_info["alert_id"]
-            + "&date_unit=hour&filter_indiv=true&user_ids=";
-        let avg_url = baseService + "/counts?alert_id=" + alert_info["alert_id"]
-            + "&date_unit=hour&&filter_indiv=false&user_ids=";
-        for (let [data_source, users] of Object.entries(alert_info["user_infos"])) {
-            for (let user of users) {
-                count_url += user["id"];
-                avg_url += user["id"];
-            }
+    function fetchTimelineAndNetworkData(alert_id, user_ids, dataset, onData) {
+        let timeline_url = baseService + "/timeline_alerts?alert_id=" + alert_id
+            + "&dataset=" + dataset + "&user_ids=";
+        let networkUrl = baseService + "/network?dataset=" + dataset + "&root_node=" + user_ids[0]
+            + "&depth=2&breadth=3";
+        for (let u_id of user_ids) {
+            timeline_url += u_id;
         }
-        fetchAndParseMulti([count_url, avg_url], onData)
+        fetchAndParseMulti([timeline_url, networkUrl], onData)
     }
 
     function fetchLocationData(alert_info, filter_indiv, onData) {
@@ -169,75 +173,280 @@
         }
     }
 
+    let sortBy = "created_day";
+    let factorFilter = null;
+    let indivFilter = null;
+
+    function registerFilterEvents(htmlLoader, alertInfo) {
+        let sortSelect = document.getElementById("sort-by-select");
+        let factorSelect = document.getElementById("threat-factor-select");
+        let indivSelect = document.getElementById("indiv-select");
+
+        let alert_id = alertInfo["alert_id"];
+        let user_info = alertInfo["user_infos"]["GAB"][0];
+        let user_id = user_info["id"];
+        let dataset = alertInfo["datasets"]["GAB"];
+
+        factorSelect.addEventListener("change", () => {
+            if (factorSelect.value === "all") {
+                factorFilter = null;
+            } else {
+                factorFilter = factorSelect.value;
+            }
+            displayAlertData(htmlLoader, alertInfo);
+        });
+        indivSelect.addEventListener("change", () => {
+            if (indivSelect.value === "both") {
+                indivFilter = null;
+            } else {
+                indivFilter = indivSelect.value === "true";
+            }
+            displayAlertData(htmlLoader, alertInfo);
+        });
+        sortSelect.addEventListener("change", () => {
+            sortBy = sortSelect.value;
+            refreshPostList(htmlLoader, alert_id, user_id, dataset)
+        });
+    }
+
+    function refreshPostList(htmlLoader, alert_id, user_id, dataset) {
+        postListDiv.innerHTML = "";
+        let newPostList = postListDiv.cloneNode(true);
+        postListDiv.parentNode.replaceChild(newPostList, postListDiv);
+        postListDiv = newPostList;
+
+        console.log("Showing First Alert: " + alert_id);
+        let visiblePostPages = 0;
+        fetchPostListData(alert_id, user_id, dataset, 0, sortBy, factorFilter, indivFilter, (hydrPosts) => {
+            appendPosts(htmlLoader, hydrPosts, postListDiv);
+            visiblePostPages += 1;
+        });
+        postListDiv.addEventListener("scroll", (ev) => {
+            if ((postListDiv.scrollTop + postListDiv.offsetHeight) >= postListDiv.scrollHeight) {
+                fetchPostListData(alert_id, user_id, dataset, visiblePostPages, sortBy, factorFilter, indivFilter, (hydrPosts) => {
+                    appendPosts(htmlLoader, hydrPosts, postListDiv);
+                    visiblePostPages += 1;
+                });
+            }
+        });
+    }
+
+    let userPosts = {}; //user_name -> alarmed_posts
+    let locationToAlerts = {}; //location_id -> [alerts]
+    let networkEdges = null;
+    let indivPoints = [];
+    let networkPoints = [];
+
+    function refreshTimelineAndNetwork(htmlLoader, alert_id, user_name, user_id, dataset) {
+        if (indivPoints.length !== 0 && networkPoints.length !== 0) {
+            let [filtIndiv, filtNetwork] = filterTimelineResults(factorFilter, indivFilter);
+            new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, "%Y-%m-%d_%H");
+            refreshNetwork(networkEdges, user_name);
+            return;
+        }
+
+        fetchTimelineAndNetworkData(alert_id, [user_id], dataset, ([hydr_posts, network]) => {
+            for (let [a_post, s_post] of hydr_posts) {
+                let post_user = s_post["author"]["name"];
+                let post_locations = "location_ids" in a_post && a_post["location_ids"] != null ? a_post["location_ids"] : [];
+                if (!(post_user in userPosts)) {
+                    userPosts[post_user] = [];
+                }
+                userPosts[post_user].push(a_post);
+                for (let locationId of post_locations) {
+                    if (!(locationId in locationToAlerts)) {
+                        locationToAlerts[locationId] = [];
+                    }
+                    locationToAlerts[locationId].push(a_post);
+                }
+
+                if (a_post["user_id"] === user_id) {
+                    indivPoints.push(a_post)
+                } else {
+                    networkPoints.push(a_post)
+                }
+            }
+
+            let [filtIndiv, filtNetwork] = filterTimelineResults(factorFilter, indivFilter);
+            new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, "%Y-%m-%d_%H");
+            networkEdges = network;
+            refreshNetwork(network, user_name);
+        });
+    }
+
+    function refreshNetwork(networkEdges, user_name) {
+        networkCanvas.innerHTML = "";
+
+        let nodes = new Set();
+        let links = [];
+
+        for (let edge of networkEdges) {
+            let source_id = edge["source_id"];
+            let target_id = edge["target_id"];
+            nodes.add(source_id);
+            nodes.add(target_id);
+
+            if (indivFilter != null) {
+                if (indivFilter === true) {
+                    continue; // no edges if just the individual
+                } else {
+                    if (source_id === user_name || target_id === user_name) {
+                        continue;
+                    }
+                }
+            }
+
+            let linkConfig = {
+                "sourceNodeId": source_id,
+                "targetNodeId": target_id,
+                "metaData1": 0.05,
+                "metaData2": 0.5,
+                "arrowSize": 0.2
+            };
+            if (userRgbThreat(target_id, false) != null) {
+                linkConfig["metaData2"] = 0.0;
+            }
+            links.push(linkConfig);
+        }
+        let nodeArray = [];
+        for (let node_id of nodes) {
+            if (indivFilter != null) {
+                if (indivFilter === true) {
+                    if (node_id !== user_name) {
+                        continue;
+                    }
+                } else {
+                    if (node_id === user_name) {
+                        continue;
+                    }
+                }
+            }
+
+            let nodeConfig = {"id": node_id, "metaData1": 0.5, "metaData2": 0.5, "rgb": [255, 255, 255]};
+            let worstThreat = userRgbThreat(node_id, user_name === node_id);
+            if (worstThreat != null) {
+                nodeConfig["rgb"] = worstThreat;
+                nodeConfig["metaData2"] = 0.0;
+            }
+            nodeArray.push(nodeConfig);
+        }
+        let data = {"nodes": Array.from(nodeArray), "links": links};
+        IDEHTViz().setupVisualization("network-container", data);
+    }
+
+    function userRgbThreat(userName, isNetwork) {
+        if (factorFilter != null) {
+            return threatRgbMap[mostSevereFilteredThreat(userName)]
+        } else {
+            let worstThreat = mostSevereFilteredThreat(userName);
+            if (worstThreat != null) {
+                return threatRgbMap[worstThreat];
+            } else if (!isNetwork) {
+                return networkRgb;
+            } else {
+                return individualRgb;
+            }
+        }
+    }
+
+    function mostSevereFilteredThreat(userName) {
+        if (!(userName in userPosts)) {
+            return null;
+        }
+        if (factorFilter != null) {
+            for (let post of userPosts[userName]) {
+                if (post[factorFilter] === true) {
+                    return factorFilter
+                }
+            }
+            return null;
+        }
+        for (let factorFilter of Object.keys(threatColorMap)) {
+            for (let post of userPosts[userName]) {
+                if (post[factorFilter] === true) {
+                    return factorFilter
+                }
+            }
+        }
+        return null;
+    }
+
+    function filterTimelineResults(filterThreatFacs, filterIndiv) {
+        let filteredIndiv = [];
+        let filteredNetwork = [];
+        for (let indivPoint of indivPoints) {
+            if (filterIndiv == null || filterIndiv) {
+                if (filterThreatFacs == null) {
+                    filteredIndiv.push(indivPoint);
+                } else if (indivPoint[filterThreatFacs] === true) {
+                    filteredIndiv.push(indivPoint);
+                }
+            }
+        }
+        for (let netPoint of networkPoints) {
+            if (filterIndiv == null || !filterIndiv) {
+                if (filterThreatFacs == null) {
+                    filteredNetwork.push(netPoint);
+                } else if (netPoint[filterThreatFacs] === true) {
+                    filteredNetwork.push(netPoint);
+                }
+            }
+        }
+        return [filteredIndiv, filteredNetwork];
+    }
+
+    let mapWidget = null;
+    let locations = [];
+    let facilities = [];
+
+    function refreshMap(alertInfo) {
+        if (mapWidget != null) {
+            if (factorFilter != null) {
+                let filtLocations = [];
+                for (let location of locations) {
+                    for (let a_post of locationToAlerts[location["id"]]) {
+                        if (a_post[factorFilter] === true) {
+                            filtLocations.push(location);
+                        }
+                    }
+                }
+                mapWidget.render2dLocations(filtLocations, facilities);
+            } else {
+                mapWidget.render2dLocations(locations, facilities);
+            }
+            return;
+        }
+
+        let shermanOaksBB = [-118.6, 33.66, -118.0, 34.2];
+        fetchLocationData(alertInfo, null, ([locs, facs]) => {
+            locations = Object.keys(locs).map((x) => JSON.parse(x));
+            facilities = facs;
+            mapWidget = new MapWidget(mapDiv, shermanOaksBB, locations, facilities);
+        });
+    }
+
+    function displayAlertData(htmlLoader, alertInfo) {
+        let alert_id = alertInfo["alert_id"];
+        let user_info = alertInfo["user_infos"]["GAB"][0];
+        let user_id = user_info["id"];
+        let dataset = alertInfo["datasets"]["GAB"];
+
+        refreshPostList(htmlLoader, alert_id, user_id, dataset);
+        refreshTimelineAndNetwork(htmlLoader, alert_id, user_info["name"], user_id, dataset);
+        refreshMap(alertInfo);
+    }
+
     function onDependsLoad(htmlLoader) {
         fetchAndParse('alerts/list', (alertList) => {
             if (alertList.length === 0) {
                 // TODO show somewhere on the screen
             } else {
                 let firstAlert = alertList[1];
-                let user_info = firstAlert["user_infos"]["GAB"][0];
-                let user_id = user_info["id"];
-                let dataset = firstAlert["datasets"]["GAB"];
 
                 new OverviewColumn(overviewDiv, htmlLoader, firstAlert);
 
-                console.log("Showing First Alert: " + firstAlert["alert_id"]);
-                let visiblePostPages = 0;
-                fetchPostListData(firstAlert["alert_id"], user_id, dataset, 0, (hydrPosts) => {
-                    appendPosts(htmlLoader, hydrPosts, postListDiv);
-                    visiblePostPages += 1;
-                });
-                postListDiv.addEventListener("scroll", (ev) => {
-                    if ((postListDiv.scrollTop + postListDiv.offsetHeight) >= postListDiv.scrollHeight) {
-                        fetchPostListData(firstAlert["alert_id"], user_id, dataset, visiblePostPages, (hydrPosts) => {
-                            appendPosts(htmlLoader, hydrPosts, postListDiv);
-                            visiblePostPages += 1;
-                        });
-                    }
-                });
-
-                let networkController = IDEHTViz();
-                let networkUrl = baseService + "/network?dataset=" + dataset + "&root_node=" + user_id
-                    + "&depth=2&breadth=3";
-                fetchAndParse(networkUrl, (network) => {
-                    let nodes = new Set();
-                    let links = [];
-
-                    for (let edge of network) {
-                        let source_id = edge["source_id"];
-                        let target_id = edge["target_id"];
-                        nodes.add(source_id);
-                        nodes.add(target_id);
-                        links.push({"sourceNodeId": source_id, "targetNodeId": target_id, "metaData1": 1.0});
-                    }
-                    let nodeArray = [];
-                    for (let node_id of nodes) {
-                        nodeArray.push({"id": node_id, "metaData1": 1.0});
-                    }
-                    let data = {"nodes": Array.from(nodeArray), "links": links};
-                    networkController.setupVisualization("network-container", data)
-                });
-
-                // 237 is the size of the network, eventually this needs to be stored and looked up from somewhere
-                fetchCountData(firstAlert, 237, ([countData, avgData]) => {
-                    let lines = [];
-                    let countPoints = [];
-                    let avgPoints = [];
-                    for (let [date, count] of Object.entries(countData)) {
-                        countPoints.push([date.toString(), count])
-                    }
-                    for (let [date, count] of Object.entries(avgData)) {
-                        avgPoints.push([date.toString(), count])
-                    }
-                    lines.push(countPoints, avgPoints);
-
-                    new Timeline(timelineDiv, htmlLoader, lines, {}, "%Y-%m-%d_%H")
-                });
-
-                let shermanOaksBB = [-118.6, 33.66, -118.0, 34.2];
-                fetchLocationData(firstAlert, null, ([locs, facs]) => {
-                    new MapWidget(mapDiv, shermanOaksBB, locs, facs);
-                });
+                registerFilterEvents(htmlLoader, firstAlert);
+                displayAlertData(htmlLoader, firstAlert, "created_day")
             }
         });
     }

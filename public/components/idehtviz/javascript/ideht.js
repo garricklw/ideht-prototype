@@ -30,6 +30,8 @@ var IDEHTViz = function () {
         that.canvasName = canvasElementName;
 
         that.vs = new VisualizationSandbox();
+        that.vs.setLayoutScale(0.4);
+
         //Instantiate visualization with a canvas DOM object (and no visualization setup - meaning it will start with default setup)
         that.vs.init(
             document.getElementById(canvasElementName),
@@ -37,7 +39,7 @@ var IDEHTViz = function () {
         );
 
         //Set camera position and orientation
-        var cameraSetup = new CameraSetup(0, 100, 0, 0, 0, 0, 50.0);
+        var cameraSetup = new CameraSetup(0, 100, 0, 0, 0, 0, 170.0);
         that.vs.setCameraSetup(cameraSetup);
 
         //that.vs.setPerspective(false); // Switch to 2D Mode
@@ -115,7 +117,7 @@ var IDEHTViz = function () {
                 var laf = new NodeLookAndFeel(
                     model,
                     [color.r, color.g, color.b],
-                    [128, 128, 128],
+                    [230, 230, 230],
                     texture,
                     size,
                     transparency,
@@ -150,7 +152,7 @@ var IDEHTViz = function () {
                 if (style.linkTransparencies != null && style.linkTransparencies[linkId] != null) {
                     transparency = style.linkTransparencies[linkId];
                 }
-                var size = 1.0;
+                var size = 0.5;
                 if (style.linkSizes != null && style.linkSizes[linkId] != null) {
                     size = style.linkSizes[linkId];
                 }
@@ -167,7 +169,7 @@ var IDEHTViz = function () {
                     new NodeLookAndFeel(
                         "ArrowHead",
                         [color.r, color.g, color.b],
-                        [128, 128, 128],
+                        [230, 230, 230],
                         texture,
                         size / 4.0,
                         transparency,
@@ -177,7 +179,7 @@ var IDEHTViz = function () {
                     ),
                     texture,
                     [color.r, color.g, color.b],
-                    [128, 128, 128],
+                    [230, 230, 230],
                     size,
                     transparency,
                     false,
@@ -209,7 +211,7 @@ var IDEHTViz = function () {
             that.vs.getLayoutManager().reset("Dataset0");
         }
 
-    }
+    };
 
     this.makeNetwork = function (net) {
 
@@ -231,11 +233,11 @@ var IDEHTViz = function () {
                 node.id,
                 new NodeLookAndFeel(
                     "Disk",
-                    [node.metaData1 * 255, 256 - node.metaData1 * 255, 0],
-                    [128, 128, 128],
+                    node.rgb,
+                    [230, 230, 230],
                     null,
-                    node.metaData1 * 5,
-                    0.0,
+                    node.metaData1,
+                    node.metaData2,
                     false,
                     "Scale_Change",
                     {}
@@ -273,7 +275,7 @@ var IDEHTViz = function () {
                             [128, 128, 128],
                             [128, 128, 128],
                             null,
-                            0.5,
+                            link.arrowSize,
                             0.0,
                             false,
                             "Scale_Change"
@@ -282,7 +284,7 @@ var IDEHTViz = function () {
                         [128, 128, 128],
                         [128, 128, 128],
                         link.metaData1,
-                        0.0,
+                        link.metaData2,
                         false,
                         "Move_Component"
                     )

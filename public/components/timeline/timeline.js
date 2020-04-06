@@ -1,98 +1,87 @@
 // import * as d3 from "/public/javascripts/d3";
 
 import {SizingUtils} from "../../javascripts/SizingUtils.js";
+import {networkColor, individualColor, threatColorMap} from "../../javascripts/ideht_colors.js";
 
-function appendDotToChart(chartSel, pathSel, xScaler, dotX, dotColor) {
-    chartSel.append("circle")
-        .attr("class", "dot")
-        .attr("cx", xScaler(dotX))
-        .attr("cy", yValueForX(pathSel, xScaler, dotX))
-        .attr("r", 5)
-        .style("fill", dotColor)
-        .style("stroke", "black")
-        .style("stroke-width", "2")
-}
-
-function yValueForX(pathSel, xScaler, xCor) {
-    let x = xScaler(xCor);
-    let pathEl = pathSel.node();
-    let pathLength = pathEl.getTotalLength();
-
-    let beginning = x, end = pathLength, target, pos;
-    while (true) {
-        target = Math.floor((beginning + end) / 2);
-        pos = pathEl.getPointAtLength(target);
-        if ((target === end || target === beginning) && pos.x !== x) {
-            break;
-        }
-        if (pos.x > x) end = target;
-        else if (pos.x < x) beginning = target;
-        else break; //position found
-    }
-
-    return pos.y;
-}
-
-export function Timeline(parentNode, htmlDepends, lines, alerts, dateFormat) {
+export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, alerts, dateFormat) {
 
     let that = this;
     this.isInit = false;
     this.parseDate = d3.timeParse(dateFormat);
     this.parent = parentNode;
-    this.lines = lines;
+    that.topAlerts = top_alerts;
+    that.bottomAlerts = bottom_alerts;
 
-    let widget = htmlDepends.dependencies["Timeline"];
-    that.shadow = parentNode.attachShadow({mode: 'open'});
-    that.shadow.append(widget.documentElement.cloneNode(true));
+    that.shadow = htmlDepends.attachShadow("Timeline", parentNode);
+    if ((top_alerts == null || top_alerts.length === 0) && (bottom_alerts == null || bottom_alerts.length === 0)) {
+        let noData = document.createElement("div");
+        noData.textContent = "No Data";
+        that.shadow.getElementById("graph-svg").remove();
+        that.shadow.getElementById("timeline-root").appendChild(noData);
+        return;
+    }
 
-    this.displayData = function (lines) {
-        for (let i = 0; i < lines.length; i++) {
-            let data = lines[i];
-            that.chart.append("path")
-                .datum(data)
-                .attr("class", "line" + i)
-                .attr("d", that.lineScalers[i]);
-
-            that.navElem.append("path")
-                .datum(data)
-                .attr("class", "line" + i)
-                .attr("d", that.navLineScalers[i]);
-        }
-
+    this.displayData = function () {
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.navElem.select(".x-axis").call(that.navXAxis);
-        // that.updateYAxes();
+
+        that.networkTicks = that.displayTicks(that.topAlerts, "Network");
+        that.indivTicks = that.displayTicks(that.bottomAlerts, "Individual");
     };
 
-    /**
-     * @param alerts map of x value -> alert_color
-     */
-    this.displayAlerts = function (alerts) {
-        that.alerts = alerts;
-        that.updateAlertDots(alerts);
-
-        for (let alert of Object.keys(that.alerts)) {
-            let severity = that.alerts[alert];
-            appendDotToChart(that.navElem, that.navElem.select(".line"), that.navXData, alert, severity);
+    function alertPostToColor(post) {
+        let color = individualColor;
+        for (let threat_check of Object.keys(threatColorMap)) {
+            if (post[threat_check] === true) {
+                color = threatColorMap[threat_check];
+                break
+            }
         }
+        return color;
+    }
+
+    that.displayTicks = function (alert_infos, y_idx) {
+        let graphBars = that.chart.selectAll(".bar" + y_idx)
+            .data(alert_infos)
+            .enter().append("rect")
+            .attr("class", "bar" + y_idx)
+            .attr("x", function (d) {
+                return that.graphXData(new Date(d["created_day"] * 1000));
+            })
+            .attr("width", 7)
+            .attr("y", that.y(y_idx))
+            .attr("height", that.y.bandwidth())
+            .attr("fill", d => alertPostToColor(d));
+        that.navElem.selectAll(".navbar" + y_idx)
+            .data(alert_infos)
+            .enter().append("rect")
+            .attr("class", "navbar" + y_idx)
+            .attr("x", function (d) {
+                return that.navXData(new Date(d["created_day"] * 1000));
+            })
+            .attr("width", 5)
+            .attr("y", that.navY(y_idx))
+            .attr("height", that.navY.bandwidth())
+            .attr("fill", d => alertPostToColor(d));
+        return graphBars;
     };
 
-    this.updateAlertDots = function () {
+    that.updateTicks = function (ticks) {
+        that.axesElem.select(".x-axis").call(that.graphXAxis);
+        that.navElem.select(".x-axis").call(that.navXAxis);
+
         if (!that.isInit) {
             return;
         }
-        that.chart.selectAll(".dot").remove();
-        for (let alert of Object.keys(that.alerts)) {
-            let severity = that.alerts[alert];
-
-            appendDotToChart(that.chart, that.chart.select(".line"), that.graphXData, alert, severity);
-        }
+        ticks.attr("x", function (d) {
+            return that.graphXData(new Date(d["created_day"] * 1000));
+        })
     };
 
-    this.initGraph = function (lines) {
+    this.initGraph = function (top_alerts, bottom_alerts) {
         that.graphRootSvg = d3.select(that.shadow.querySelector("svg"));
-        that.margin = {top: 10, right: 40, bottom: 0, left: 40};
-        that.navMargin = {top: 0, right: 40, bottom: 0, left: 40};
+        that.margin = {top: 10, right: 20, bottom: 0, left: 60};
+        that.navMargin = {top: 0, right: 20, bottom: 0, left: 60};
         that.chartWidth = +that.parent.offsetWidth - that.margin.left - that.margin.right;
         that.height = +that.parent.offsetHeight * 0.6;
         that.navHeight = +that.parent.offsetHeight * 0.18;
@@ -127,63 +116,50 @@ export function Timeline(parentNode, htmlDepends, lines, alerts, dateFormat) {
             .attr("transform", "translate(" + that.margin.left + "," + that.margin.top + ")")
             .call(that.zoom);
 
-        that.initAxes();
+        that.initAxes(top_alerts, bottom_alerts);
         that.initNavBox();
     };
 
-    this.initAxes = function () {
-        let xExtent = d3.extent(lines[0], d => that.parseDate(d[0]));
-        for (let lineData of lines) {
-            let lineXExtent = d3.extent(lineData, d => that.parseDate(d[0]));
-            if (lineXExtent[0] < xExtent[0]) {
-                xExtent[0] = lineXExtent[0];
+    this.initAxes = function (top_alerts, bottom_alerts) {
+        let presentAlerts = [];
+        if (top_alerts != null && top_alerts.length !== 0) {
+            presentAlerts.push(top_alerts);
+        }
+        if (bottom_alerts != null && bottom_alerts.length !== 0) {
+            presentAlerts.push(bottom_alerts);
+        }
+
+        let xExtent = d3.extent(presentAlerts[0], d => new Date(d["created_day"] * 1000));
+        if (presentAlerts.length > 1) {
+            let otherXExtent = d3.extent(presentAlerts[1], d => new Date(d["created_day"] * 1000));
+            if (otherXExtent[0] < xExtent[0]) {
+                xExtent[0] = otherXExtent[0];
             }
-            if (lineXExtent[1] > xExtent[1]) {
-                xExtent[1] = lineXExtent[1];
+            if (otherXExtent[1] > xExtent[1]) {
+                xExtent[1] = otherXExtent[1];
             }
         }
+        xExtent[1] = new Date(xExtent[1].getTime() + (1000 * 60 * 60 * 24));
 
         that.graphXData = d3.scaleTime().range([0, that.chartWidth]);
         that.navXData = d3.scaleTime().range([0, that.chartWidth]);
-        that.ys = [
-            d3.scaleLinear().range([that.height, 0]),
-            d3.scaleLinear().range([that.height, 0]),
-        ];
-        that.navYs = [
-            d3.scaleLinear().range([that.navHeight, 0]),
-            d3.scaleLinear().range([that.navHeight, 0])
-        ];
+        that.y = d3.scaleBand()
+            .range([0, that.height])
+            .padding(0.5);
+        that.navY = d3.scaleBand()
+            .range([0, that.navHeight])
+            .padding(0.4);
+
         that.graphXData.domain(xExtent);
-        that.ys[0].domain([0, d3.max(lines[0], d => +d[1])]);
-        that.ys[1].domain([0, d3.max(lines[1], d => +d[1])]);
+        that.y.domain(["Network", "Individual"]);
 
         that.navXData.domain(that.graphXData.domain());
-        that.navYs[0] = that.navYs[0].domain(that.ys[0].domain());
-        that.navYs[1] = that.navYs[1].domain(that.ys[1].domain());
+        that.navY.domain(that.y.domain());
 
         that.graphXAxis = d3.axisBottom(that.graphXData);
-        that.yAxes = [
-            d3.axisLeft(that.ys[0]),
-            d3.axisRight(that.ys[1]),
-        ];
-        that.navXAxis = d3.axisBottom(that.navXData);
-        that.lineScalers = [
-            d3.line()
-                .x(d => that.graphXData(that.parseDate(d[0])))
-                .y(d => that.ys[0](+d[1])),
-            d3.line()
-                .x(d => that.graphXData(that.parseDate(d[0])))
-                .y(d => that.ys[1](+d[1])),
-        ];
+        that.yAxis = d3.axisLeft(that.y);
 
-        that.navLineScalers = [
-            d3.line()
-                .x(d => that.navXData(that.parseDate(d[0])))
-                .y(d => that.navYs[0](+d[1])),
-            d3.line()
-                .x(d => that.navXData(that.parseDate(d[0])))
-                .y(d => that.navYs[1](+d[1])),
-        ];
+        that.navXAxis = d3.axisBottom(that.navXData);
 
         that.axesElem = that.graphRootSvg.append("g")
             .attr("class", "focus")
@@ -194,20 +170,17 @@ export function Timeline(parentNode, htmlDepends, lines, alerts, dateFormat) {
             .attr("transform", "translate(0," + that.height + ")")
             .call(that.graphXAxis);
 
-        that.axesElem.append("g")
+        let yAxis = that.axesElem.append("g")
             .attr("class", "axis y-axis0")
-            .call(that.yAxes[0]);
-        that.axesElem.append("g")
-            .attr("transform", "translate(" + that.chartWidth + ")")
-            .attr("class", "axis y-axis1")
-            .call(that.yAxes[1]);
-        that.updateYAxes();
+            .call(that.yAxis);
+        let ticks = yAxis.selectAll(".tick");
+        ticks.attr("stroke", (d, i) => i === 0 ? networkColor : individualColor)
     };
 
     this.initNavBox = function () {
         that.navElem = that.graphRootSvg.append("g")
             .attr("class", "context")
-            .attr("transform", "translate(" + that.navMargin.left + "," + (that.height + 36) + ")");
+            .attr("transform", "translate(" + that.navMargin.left + "," + (that.height + 32) + ")");
 
         that.navElem.append("g")
             .attr("class", "axis x-axis")
@@ -217,45 +190,32 @@ export function Timeline(parentNode, htmlDepends, lines, alerts, dateFormat) {
         that.navElem.append("g")
             .attr("class", "brush")
             .call(that.brush)
-            .call(that.brush.move, that.graphXData.range());
+            .call(that.brush.move, that.navXData.range());
     };
 
     this.brushed = function () {
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
         let s = d3.event.selection || that.navXData.range();
         that.graphXData.domain(s.map(that.navXData.invert, this.navXData));
-        that.updateLines();
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.graphRootSvg.select(".zoom").call(that.zoom.transform, d3.zoomIdentity
             .scale(that.chartWidth / (s[1] - s[0]))
             .translate(-s[0], 0));
-        that.updateAlertDots();
+        that.updateTicks(that.networkTicks);
+        that.updateTicks(that.indivTicks);
     };
 
     this.zoomed = function () {
         if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
         let t = d3.event.transform;
         that.graphXData.domain(t.rescaleX(that.navXData).domain());
-        that.updateLines();
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.navElem.select(".brush").call(that.brush.move, that.graphXData.range().map(t.invertX, t));
-        that.updateAlertDots();
+        that.updateTicks(that.networkTicks);
+        that.updateTicks(that.indivTicks);
     };
 
-    this.updateLines = function () {
-        for (let i = 0; i < that.lines.length; i++) {
-            that.chart.select(".line" + i).attr("d", that.lineScalers[i]);
-        }
-    };
-
-    this.updateYAxes = function () {
-        for (let i = 0; i < that.lines.length; i++) {
-            that.chart.select(".y-axis" + i).call(that.yAxes[i]);
-        }
-    };
-
-    that.initGraph();
-    that.displayData(lines);
-    this.isInit = true;
-    that.displayAlerts(alerts);
+    that.initGraph(top_alerts, bottom_alerts);
+    that.displayData();
+    that.isInit = true;
 }

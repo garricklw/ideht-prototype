@@ -829,7 +829,7 @@ var ModelRepository = function (vs) {
             size = 1.0;
         }
 
-        var geometry = new THREE.CylinderGeometry(size, size, 1.0, 30, 1.0, false); //radiusTop, radiusBottom, height, segmentsRadius, segmentsHeight, openEnded
+        var geometry = new THREE.CylinderGeometry(size, size, 1.0, 60, 1.0, false); //radiusTop, radiusBottom, height, segmentsRadius, segmentsHeight, openEnded
         var material = new THREE.MeshPhongMaterial({
             ambient: 0xdddddd,
             color: 0xdddddd,
@@ -951,7 +951,7 @@ var ModelRepository = function (vs) {
             size = 1.0;
         }
 
-        var geometry = new THREE.CylinderGeometry(size / 4.0, size, 1.0, 20, 1.0, false); //radiusTop,` radiusBottom, height, segmentsRadius, segmentsHeight, openEnded
+        var geometry = new THREE.CylinderGeometry(size / 4.0, size, size * 1.5, 20, 1.0, false); //radiusTop,` radiusBottom, height, segmentsRadius, segmentsHeight, openEnded
         var material = new THREE.MeshPhongMaterial({
             ambient: 0xdddddd,
             color: 0xdddddd,
@@ -1182,7 +1182,7 @@ var ModelRepository = function (vs) {
     that.makeLabelSprite = function (labelText, borderColor, backgroundColor, layoutScale, objectScale) {
 
         var contrastColor = that.getBestFontColor(backgroundColor);
-        return that.makeTextSprite(labelText, layoutScale, objectScale, {
+        return that.makeTextSprite(labelText, 1.0, objectScale, {
             fontsize: 24,
             borderColor: {r: borderColor[0], g: borderColor[1], b: borderColor[2], a: borderColor[3]},
             backgroundColor: {
@@ -1204,7 +1204,7 @@ var ModelRepository = function (vs) {
             parameters["fontface"] : "Arial";
 
         var fontsize = parameters.hasOwnProperty("fontsize") ?
-            parameters["fontsize"] : 36;
+            parameters["fontsize"] : 400;
 
         var fontColor = parameters.hasOwnProperty("fontColor") ?
             parameters["fontColor"] : {r: 0, g: 0, b: 0, a: 1.0};
@@ -1270,7 +1270,7 @@ var ModelRepository = function (vs) {
 
         var sprite = new THREE.Sprite(spriteMaterial);
         sprite.type = "Label";
-        sprite.scale.set(canvas.width / canvas.height * layoutScale, layoutScale, 1.0);
+        sprite.scale.set(canvas.width / canvas.height * layoutScale, 1.0, 1.0);
 
         sprite.labelText = message;
         sprite.width = textWidth + borderThickness * 2;
