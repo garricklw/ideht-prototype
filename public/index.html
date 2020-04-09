@@ -274,6 +274,12 @@
         });
     }
 
+    function onNetNodeSelect(intersected) {
+        if (intersected.getSelected()) {
+            console.log(intersected.getId());
+        }
+    }
+
     function refreshNetwork(networkEdges, user_name) {
         networkCanvas.innerHTML = "";
 
@@ -331,7 +337,7 @@
             nodeArray.push(nodeConfig);
         }
         let data = {"nodes": Array.from(nodeArray), "links": links};
-        IDEHTViz().setupVisualization("network-container", data);
+        IDEHTViz().setupVisualization("network-container", data, onNetNodeSelect);
     }
 
     function userRgbThreat(userName, isNetwork) {

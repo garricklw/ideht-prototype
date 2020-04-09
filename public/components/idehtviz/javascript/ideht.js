@@ -25,7 +25,7 @@ var IDEHTViz = function () {
     this.currentLinkStyle;
     this.currentNodeStyle;
 
-    this.setupVisualization = function (canvasElementName, data) {
+    this.setupVisualization = function (canvasElementName, data, selectCallback) {
 
         that.canvasName = canvasElementName;
 
@@ -35,7 +35,8 @@ var IDEHTViz = function () {
         //Instantiate visualization with a canvas DOM object (and no visualization setup - meaning it will start with default setup)
         that.vs.init(
             document.getElementById(canvasElementName),
-            VisualizationSetup.prototype.getDefault()
+            VisualizationSetup.prototype.getDefault(),
+            selectCallback
         );
 
         //Set camera position and orientation

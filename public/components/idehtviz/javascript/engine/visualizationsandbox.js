@@ -1560,8 +1560,8 @@ var VisualizationSandbox = function() {
 
 			}			
 			
-			if (that.selectionChangeCallback != undefined || that.selectionChangeCallback != null) {
-				that.selectionChangeCallback.call(that);
+			if (that.selectionChangeCallback !== undefined) {
+				that.selectionChangeCallback(that.INTERSECTED);
 			}
 		} else if (that.drawingConnection && that.selectionCube == null) {
 			if (!that.INTERSECTED.getIsConnection()) {
