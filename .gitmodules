@@ -1,0 +1,3 @@
+[submodule "public/common"]
+	path = public/common
+	url = https://github.com/Perceptronics/percjs-common.git
