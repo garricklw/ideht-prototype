@@ -1,6 +1,7 @@
 import {addBarsToDiv} from "../threat_bar/ThreatBar.js";
-import {SizingUtils} from "../../javascripts/SizingUtils.js";
+import {SizingUtils} from "../../common/utils/SizingUtils.js";
 import {installationColor, proximityColor, radicalColor, violenceColor} from "../../javascripts/ideht_colors.js";
+import {DomUtils} from "../../common/utils/DomUtils.js";
 
 export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
 
@@ -27,6 +28,9 @@ export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
     let postText = socialPost["text"];
     let textSegment = that.shadow.getElementById("text-segment");
     let textDiv = that.shadow.getElementById("post-text");
+    let tooltipSpan = that.shadow.getElementById("post-text-tooltip");
+    tooltipSpan.textContent = postText;
+
     SizingUtils.runOnInit(textSegment, () => {
         let truncated = SizingUtils.truncateTextToRows(postText, textDiv, textSegment.offsetWidth, visibleRows);
         if (truncated.trim() !== postText) {
@@ -83,3 +87,50 @@ export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
         return threatCard;
     }
 }
+
+PostCard.appendPosts = function(htmlLoader, hydrPosts, postDiv) {
+    for (let [a_post, s_post] of hydrPosts) {
+        let spaceDiv = document.createElement("div");
+        spaceDiv.style.height = "147px";
+        spaceDiv.style.width = "96%";
+        spaceDiv.style.margin = "8px auto";
+        spaceDiv.style.border = "1px solid lightgray";
+        postDiv.appendChild(spaceDiv);
+
+        new PostCard(spaceDiv, htmlLoader, a_post, s_post);
+    }
+};
+
+PostCard.refreshPostList = function(htmlLoader, postListDiv, pageThroughPostsFunc) {
+    postListDiv.innerHTML = "";
+    postListDiv = DomUtils.refreshElement(postListDiv);
+
+    let visiblePostPages = 0;
+    pageThroughPostsFunc(0, (hydrPosts) => {
+        PostCard.appendPosts(htmlLoader, hydrPosts, postListDiv);
+        visiblePostPages += 1;
+    });
+    postListDiv.addEventListener("scroll", (_) => {
+        if ((postListDiv.scrollTop + postListDiv.offsetHeight) >= postListDiv.scrollHeight) {
+            pageThroughPostsFunc(visiblePostPages, (hydrPosts) => {
+                PostCard.appendPosts(htmlLoader, hydrPosts, postListDiv);
+                visiblePostPages += 1;
+            });
+        }
+    });
+
+    return postListDiv;
+};
+
+// export function appendPosts(htmlLoader, hydrPosts, postDiv) {
+//     for (let [a_post, s_post] of hydrPosts) {
+//         let spaceDiv = document.createElement("div");
+//         spaceDiv.style.height = "147px";
+//         spaceDiv.style.width = "96%";
+//         spaceDiv.style.margin = "8px auto";
+//         spaceDiv.style.border = "1px solid lightgray";
+//         postDiv.appendChild(spaceDiv);
+//
+//         new PostCard(spaceDiv, htmlLoader, a_post, s_post);
+//     }
+// }

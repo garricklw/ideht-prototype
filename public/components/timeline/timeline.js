@@ -1,16 +1,21 @@
 // import * as d3 from "/public/javascripts/d3";
 
-import {SizingUtils} from "../../javascripts/SizingUtils.js";
 import {networkColor, individualColor, threatColorMap} from "../../javascripts/ideht_colors.js";
 
-export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, alerts, dateFormat) {
+export let timelineInteractionCallback = {
+    onAlertSelected: function (postId) {
+    }
+};
+
+export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, timelineInteractionCallback = timelineInteractionCallback) {
 
     let that = this;
     this.isInit = false;
-    this.parseDate = d3.timeParse(dateFormat);
     this.parent = parentNode;
     that.topAlerts = top_alerts;
     that.bottomAlerts = bottom_alerts;
+    that.highlightCircle = null;
+    that.highlightFollow = null; //rect element that the highlight is tracking
 
     that.shadow = htmlDepends.attachShadow("Timeline", parentNode);
     if ((top_alerts == null || top_alerts.length === 0) && (bottom_alerts == null || bottom_alerts.length === 0)) {
@@ -44,14 +49,26 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
         let graphBars = that.chart.selectAll(".bar" + y_idx)
             .data(alert_infos)
             .enter().append("rect")
+            .on("mouseup", (d) => {
+                timelineInteractionCallback.onAlertSelected(d["post_id"]);
+                let rect = d3.event.currentTarget;
+                let x = rect.attributes["x"].value;
+                let y = rect.attributes["y"].value;
+                that.highlightCircle
+                    .attr("cx", +x + 4)
+                    .attr("cy", +y + (that.y.bandwidth() / 2.0))
+                    .attr("display", "block");
+                that.highlightFollow = rect;
+            })
             .attr("class", "bar" + y_idx)
             .attr("x", function (d) {
                 return that.graphXData(new Date(d["created_day"] * 1000));
             })
-            .attr("width", 7)
+            .attr("width", 8)
             .attr("y", that.y(y_idx))
             .attr("height", that.y.bandwidth())
             .attr("fill", d => alertPostToColor(d));
+
         that.navElem.selectAll(".navbar" + y_idx)
             .data(alert_infos)
             .enter().append("rect")
@@ -75,7 +92,14 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
         }
         ticks.attr("x", function (d) {
             return that.graphXData(new Date(d["created_day"] * 1000));
-        })
+        });
+        if (that.highlightCircle != null && that.highlightFollow != null) {
+            let x = that.highlightFollow.attributes["x"].value;
+            let y = that.highlightFollow.attributes["y"].value;
+            that.highlightCircle
+                .attr("cx", +x + 4)
+                .attr("cy", +y + (that.y.bandwidth() / 2.0))
+        }
     };
 
     this.initGraph = function (top_alerts, bottom_alerts) {
@@ -83,7 +107,7 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
         that.margin = {top: 10, right: 20, bottom: 0, left: 60};
         that.navMargin = {top: 0, right: 20, bottom: 0, left: 60};
         that.chartWidth = +that.parent.offsetWidth - that.margin.left - that.margin.right;
-        that.height = +that.parent.offsetHeight * 0.6;
+        that.height = +that.parent.offsetHeight * 0.5;
         that.navHeight = +that.parent.offsetHeight * 0.18;
 
         that.brush = d3.brushX()
@@ -96,10 +120,29 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
             .extent([[0, 0], [that.chartWidth, that.height]])
             .on("zoom", that.zoomed);
 
+        that.graphRootSvg.append("rect")
+            .attr("class", "zoom")
+            .attr("width", that.chartWidth)
+            .attr("height", that.height)
+            .attr("transform", "translate(" + that.margin.left + "," + that.margin.top + ")")
+            .on("click", _ => {
+                timelineInteractionCallback.onAlertSelected(null);
+                that.highlightCircle.attr("display", "none");
+                that.highlightFollow = null;
+            })
+            .call(that.zoom);
+
         that.chart = that.graphRootSvg.append("g")
             .attr("class", "focus")
             .attr("transform", "translate(" + that.margin.left + "," + that.margin.top + ")")
             .attr("clip-path", "url(#clip)");
+        // .on("click", () => timelineInteractionCallback.onAlertSelected(null));
+
+        that.highlightCircle = that.chart.append("circle")
+            .attr("r", 30)
+            .attr("fill", "#FBFE11")
+            .attr("fill-opacity", 0.4)
+            .attr("display", "none");
 
         that.graphRootSvg.append("defs").append("svg:clipPath")
             .attr("id", "clip")
@@ -108,13 +151,6 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
             .attr("height", that.height)
             .attr("x", 0)
             .attr("y", 0);
-
-        that.graphRootSvg.append("rect")
-            .attr("class", "zoom")
-            .attr("width", that.chartWidth)
-            .attr("height", that.height)
-            .attr("transform", "translate(" + that.margin.left + "," + that.margin.top + ")")
-            .call(that.zoom);
 
         that.initAxes(top_alerts, bottom_alerts);
         that.initNavBox();
@@ -218,4 +254,11 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, ale
     that.initGraph(top_alerts, bottom_alerts);
     that.displayData();
     that.isInit = true;
+
+    return ({
+        clearHighlight: () => {
+            that.highlightCircle.attr("display", "none");
+            that.highlightFollow = null;
+        }
+    })
 }

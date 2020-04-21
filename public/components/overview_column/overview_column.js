@@ -1,6 +1,7 @@
 import {ThreatBar} from "../threat_bar/ThreatBar.js";
 import {IdehtServiceCalls} from "../../javascripts/IdehtServiceCalls.js";
 import {ThreatBarGraph} from "../threat_bar_graph/threat_bar_graph.js";
+import {DataFetchUtils} from "../../common/utils/DataFetchUtils.js";
 
 export function OverviewColumn(parentNode, htmlDepends, alert_info) {
 
@@ -15,7 +16,7 @@ export function OverviewColumn(parentNode, htmlDepends, alert_info) {
         let networkThreatCountUrl = baseService + "overview?alert_id=" + alert_info["alert_id"]
             + "&user_ids=" + user_info["id"] + "&is_indiv=false";
 
-        IdehtServiceCalls.fetchAndParseMulti([indivThreatCountUrl, networkThreatCountUrl], onData)
+        DataFetchUtils.fetchMultiJson([indivThreatCountUrl, networkThreatCountUrl], onData)
     }
 
     htmlDepends.loadDepends({
@@ -38,11 +39,11 @@ export function OverviewColumn(parentNode, htmlDepends, alert_info) {
         that.shadow.getElementById("alert-date").textContent = alarmDate;
 
         refreshThreatBars(true);
-        let countSource = that.shadow.getElementById("count-source");
-        countSource.addEventListener("change", () => {
-            let isIndiv = countSource.value === "individual";
-            refreshThreatBars(isIndiv);
-        });
+        // let countSource = that.shadow.getElementById("count-source");
+        // countSource.addEventListener("change", () => {
+        //     let isIndiv = countSource.value === "individual";
+        //     refreshThreatBars(isIndiv);
+        // });
     });
 
     function refreshThreatBars() {

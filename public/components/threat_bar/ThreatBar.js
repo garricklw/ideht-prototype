@@ -1,4 +1,4 @@
-import {SizingUtils} from "../../javascripts/SizingUtils.js";
+import {SizingUtils} from "../../common/utils/SizingUtils.js";
 
 export function ThreatBar(parentNode, htmlDepends, color, bgText, percentage = 0.5) {
 

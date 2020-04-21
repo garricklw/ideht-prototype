@@ -2,13 +2,12 @@
 
 <head>
     <title>Post List Demo</title>
-    <link rel="stylesheet" href="stylesheets/common.css">
+    <link rel="stylesheet" href="./common/stylesheets/common.css">
     <link rel="stylesheet" href="stylesheets/alert_dashboard.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <script src="https://d3js.org/d3.v4.js"></script>
-    <script src="javascripts/LoadHtmlDepends.js"></script>
-    <script src="components/post_list/PostList.js"></script>
+    <script src="common/widgets/word_cloud/d3.layout.cloud.js"></script>
 
     <script src="components/idehtviz/javascript/vs-min.js"></script>
     <script src="components/idehtviz/javascript/ideht.js"></script>
@@ -21,7 +20,7 @@
 <div class="flexhorizont inheritSize">
     <div id="overview-container" class="vertScroll" style="width: 17%; min-width: 310px;"></div>
     <div style="width: 83%; height: 100%">
-        <div class="headerBox" style="width: 100%; height: 7%;">
+        <div class="headerBox" style="width: 100%; height: 9%;">
             <div class="flexhorizont headerMargins">
                 <div class="headerH1Text"><b>Threat - Data Points</b></div>
                 <div class="headerLabelText vertAlignMiddle" style="margin-left: 15px">Filters:</div>
@@ -49,9 +48,25 @@
                     <option value="violence_val">Violence</option>
                 </select>
             </div>
+            <div class="headerMargins">
+                <img id="gallery-toggle" class="clickable" src="images/icons8-image-48.png" style="width: 30px"/>
+            </div>
         </div>
         <div class="flexhorizont" style="width: 100%; height: 93%;">
-            <div id="post-list" class="vertScroll" style="width: 25%;"></div>
+            <div class="rel" style="width: 25%;">
+                <div id="post-list" class="rel vertScroll bottom"></div>
+                <div id="post-list-subfilter-box" class="abs vertScroll middle overlap notRendered">
+                    <div style="height: 5%; border-bottom: 2px solid gray">
+                        <div style="padding: 3%">
+                            <button id="post-filter-return" class="vertAlignMiddle">
+                                <- Return to Previous Filter
+                            </button>
+                        </div>
+                        <div id="post-list-subfilter" style="height: 95%"></div>
+                    </div>
+                </div>
+                <div id="post-gallery-box" class="abs vertScroll top overlap notRendered"></div>
+            </div>
             <div style="width: 75%">
                 <div class="flexhorizont" style="height: 67%">
                     <div id="map-container" style="width: 100%"></div>
@@ -64,7 +79,6 @@
         </div>
     </div>
 </div>
-<!--<div id="post-list-widget" style="width: 50%; height: 80%"></div>-->
 </body>
 
 <script type="module">
@@ -74,108 +88,115 @@
     import {Timeline} from "./components/timeline/timeline.js";
     import {OverviewColumn} from "./components/overview_column/overview_column.js";
     import {threatColorMap, threatRgbMap, individualRgb, networkRgb} from "./javascripts/ideht_colors.js";
+    import {IdehtServiceCalls} from "./javascripts/IdehtServiceCalls.js";
+    import {DataFetchUtils} from "./common/utils/DataFetchUtils.js";
+    import {DomUtils} from "./common/utils/DomUtils.js";
+    import {HomePageUtils} from "./javascripts/HomePageUtils.js";
+    import {GalleryView} from "./components/gallery_view/gallery_view.js";
+    import {LoadHtmlDepends} from "./common/utils/LoadHtmlDepends.js";
 
-    let overviewDiv = d3.select("#overview-container").node();
-    let postListDiv = d3.select("#post-list").node();
-    let mapDiv = d3.select("#map-container").node();
-    let timelineDiv = d3.select("#timeline-container").node();
-    let networkCanvas = d3.select("#network-container").node();
+    let overviewDiv = document.getElementById("overview-container");
+    let postListDiv = document.getElementById("post-list");
+    let postListFilterDiv = document.getElementById("post-list-subfilter");
+    let mapDiv = document.getElementById("map-container");
+    let timelineDiv = document.getElementById("timeline-container");
+    let networkCanvas = document.getElementById("network-container");
+    let galleryToggle = document.getElementById("gallery-toggle");
+    let galleryDiv = document.getElementById("post-gallery-box");
 
-    const baseService = "http://localhost:5000/";
     new LoadHtmlDepends({
-        "components/post_list/PostList.html": "PostList",
         "components/threat_bar/ThreatBar.html": "ThreatBar",
         "components/alert_card/AlertCard.html": "AlertCard",
         "components/post_card/PostCard.html": "PostCard",
         "components/timeline/timeline.html": "Timeline",
-        "components/overview_column/overview_column.html": "OverviewColumn"
+        "components/overview_column/overview_column.html": "OverviewColumn",
+        "components/gallery_view/gallery_view.html": "GalleryView",
     }, onDependsLoad);
 
-    function fetchPostListData(alert_id, user_id, dataset, pageOffset, sortBy, filterThreatFac, filterIndiv, onData) {
-        let postUrl = baseService + "posts?alert_id=" + alert_id + "&user_ids=" + user_id + "&dataset=" + dataset;
-        postUrl += "&skip=" + (pageOffset * 20);
-        if (sortBy != null) {
-            postUrl += "&sort_by=" + sortBy;
-        }
-        if (filterThreatFac != null) {
-            postUrl += "&filter_threat_fac=" + filterThreatFac;
-        }
-        if (filterIndiv != null) {
-            postUrl += "&filter_is_indiv=" + filterIndiv;
-        }
-
-        fetchAndParse(postUrl, onData);
-    }
-
-    function fetchTimelineAndNetworkData(alert_id, user_ids, dataset, onData) {
-        let timeline_url = baseService + "/timeline_alerts?alert_id=" + alert_id
-            + "&dataset=" + dataset + "&user_ids=";
-        let networkUrl = baseService + "/network?dataset=" + dataset + "&root_node=" + user_ids[0]
-            + "&depth=2&breadth=3";
-        for (let u_id of user_ids) {
-            timeline_url += u_id;
-        }
-        fetchAndParseMulti([timeline_url, networkUrl], onData)
-    }
-
-    function fetchLocationData(alert_info, filter_indiv, onData) {
-        let location_url = baseService + "/locations?alert_id=" + alert_info["alert_id"] + "&user_ids=";
-        let facility_url = baseService + "/location_hydrate?ids=";
-        for (let [data_source, users] of Object.entries(alert_info["user_infos"])) {
-            for (let user of users) {
-                location_url += user["id"];
+    function peekAtPostIdsFunc(alert_id, pageOffset, changingMainList, passThroughFunc) {
+        return (posts) => {
+            if (factorFilter != null || indivFilter != null || locationFilter != null || postFilter != null || userFilter != null) {
+                if (pageOffset === 0) {
+                    filteredPostIds = [];
+                }
+                for (let [_, s_post] of posts) {
+                    filteredPostIds.push(s_post["id"])
+                }
+            } else {
+                filteredPostIds = null;
             }
-        }
-        if (filter_indiv !== null) {
-            location_url += "&filter_indiv=" + filter_indiv
-        }
-
-        for (let loc_id of alert_info["facility_ids"]) {
-            facility_url += loc_id;
-        }
-        fetchAndParseMulti([location_url, facility_url], onData)
-    }
-
-    function fetchAndParse(url, onData) {
-        fetchAndParseMulti([url], listData => listData.length > 0 ? onData(listData[0]) : onData());
-    }
-
-    function fetchAndParseMulti(urls, onData) {
-        let promises = urls.map((url, index) => {
-            return fetch(url)
-                .then(resp => resp.text())
-                .then((jsonstr) => {
-                    if (jsonstr.length === 0) {
-                        return;
-                    }
-                    return JSON.parse(jsonstr);
-                })
-        });
-        Promise.all(promises).then(results => onData(results))
-    }
-
-    function divider(parentList) {
-        let divider = document.createElement("div");
-        divider.classList.add("listDivider");
-        parentList.appendChild(divider);
-    }
-
-    function appendPosts(htmlLoader, hydrPosts, postDiv) {
-        for (let [a_post, s_post] of hydrPosts) {
-            let spaceDiv = document.createElement("div");
-            spaceDiv.style.height = "147px";
-            spaceDiv.style.width = "96%";
-            spaceDiv.style.margin = "8px auto";
-            spaceDiv.style.border = "1px solid lightgray";
-            postDiv.appendChild(spaceDiv);
-
-            new PostCard(spaceDiv, htmlLoader, a_post, s_post);
+            if (changingMainList) {
+                if (factorFilter != null || indivFilter != null) {
+                    mainPostListIds = new Array(filteredPostIds);
+                } else {
+                    mainPostListIds = null;
+                }
+            }
+            refreshImageGallery(alert_id, filteredPostIds);
+            passThroughFunc(posts);
         }
     }
+
+    function pageThroughPostsFunc(alert_id, user_id, dataset) {
+        return (pageOffset, onData) => {
+            IdehtServiceCalls.fetchPostListData(alert_id, user_id, dataset, pageOffset,
+                sortBy, factorFilter, indivFilter, null, null, null, peekAtPostIdsFunc(alert_id, pageOffset, true, onData));
+        }
+    }
+
+    function pageThroughLocationPostsFunc(alert_id, dataset) {
+        return (pageOffset, onData) => {
+            IdehtServiceCalls.fetchPostListData(alert_id, null, dataset, pageOffset,
+                sortBy, null, null, locationFilter, null, null, peekAtPostIdsFunc(alert_id, pageOffset, false, onData))
+        }
+    }
+
+    function pageThroughPostIdsFunc(alert_id, dataset) {
+        return (pageOffset, onData) => {
+            IdehtServiceCalls.fetchPostListData(alert_id, null, dataset, pageOffset,
+                sortBy, null, null, null, postFilter, null, peekAtPostIdsFunc(alert_id, pageOffset, false, onData))
+        }
+    }
+
+    function pageThroughUserIdFunc(alert_id, dataset) {
+        return (pageOffset, onData) => {
+            IdehtServiceCalls.fetchPostListData(alert_id, null, dataset, pageOffset,
+                sortBy, null, null, null, null, userFilter, peekAtPostIdsFunc(alert_id, pageOffset, false, onData))
+        }
+    }
+
+    let timelineWidget = null;
+    let mapWidget = null;
+    let galleryWidget = null;
 
     let sortBy = "created_day";
     let factorFilter = null;
     let indivFilter = null;
+    let locationFilter = null;
+    let postFilter = null;
+    let userFilter = null;
+    let filteredPostIds = null;
+    let mainPostListIds = null;
+
+    function registerGalleryToggle(htmlLoader, alert_id, wordFreqs) {
+        galleryDiv.style.display = "none";
+        galleryToggle.addEventListener("click", () => {
+            if (galleryDiv.style.display === "none") {
+                galleryToggle.setAttribute("src", "images/icons8-list-48.png");
+                galleryDiv.style.display = "inline";
+                galleryWidget.displayWordCloud(wordFreqs);
+            } else {
+                galleryToggle.setAttribute("src", "images/icons8-image-48.png");
+                galleryDiv.style.display = "none";
+            }
+        });
+    }
+
+    function refreshImageGallery(alert_id, filteredPostIds) {
+        IdehtServiceCalls.fetchImageUrls(alert_id, filteredPostIds, (imageUrls) => {
+            galleryWidget.displayImageGallery(imageUrls)
+        });
+    }
 
     function registerFilterEvents(htmlLoader, alertInfo) {
         let sortSelect = document.getElementById("sort-by-select");
@@ -205,49 +226,58 @@
         });
         sortSelect.addEventListener("change", () => {
             sortBy = sortSelect.value;
-            refreshPostList(htmlLoader, alert_id, user_id, dataset)
+            let postFetchFunc = pageThroughPostsFunc(alert_id, user_id, dataset);
+            PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
         });
     }
 
-    function refreshPostList(htmlLoader, alert_id, user_id, dataset) {
-        postListDiv.innerHTML = "";
-        let newPostList = postListDiv.cloneNode(true);
-        postListDiv.parentNode.replaceChild(newPostList, postListDiv);
-        postListDiv = newPostList;
-
-        console.log("Showing First Alert: " + alert_id);
-        let visiblePostPages = 0;
-        fetchPostListData(alert_id, user_id, dataset, 0, sortBy, factorFilter, indivFilter, (hydrPosts) => {
-            appendPosts(htmlLoader, hydrPosts, postListDiv);
-            visiblePostPages += 1;
-        });
-        postListDiv.addEventListener("scroll", (ev) => {
-            if ((postListDiv.scrollTop + postListDiv.offsetHeight) >= postListDiv.scrollHeight) {
-                fetchPostListData(alert_id, user_id, dataset, visiblePostPages, sortBy, factorFilter, indivFilter, (hydrPosts) => {
-                    appendPosts(htmlLoader, hydrPosts, postListDiv);
-                    visiblePostPages += 1;
-                });
-            }
-        });
+    function showHidePostListFilter(isShow) {
+        let postListFilterBox = document.getElementById("post-list-subfilter-box");
+        if (isShow) {
+            postListFilterBox.style.display = "block";
+        } else {
+            postListFilterBox.style.display = "none";
+            locationFilter = null;
+            postFilter = null;
+            userFilter = null;
+        }
     }
 
+    let userMap = {}; //user_name -> user_id
     let userPosts = {}; //user_name -> alarmed_posts
     let locationToAlerts = {}; //location_id -> [alerts]
     let networkEdges = null;
     let indivPoints = [];
     let networkPoints = [];
 
+    function timelineInteractionCallback(htmlLoader, alert_id, dataset) {
+        return ({
+            onAlertSelected: function (postId) {
+                mapWidget.clearHighlight();
+                if (postId === null) {
+                    showHidePostListFilter(false);
+                } else {
+                    postFilter = [postId];
+                    let postFunc = pageThroughPostIdsFunc(alert_id, dataset);
+                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
+                    showHidePostListFilter(true);
+                }
+            }
+        })
+    }
+
     function refreshTimelineAndNetwork(htmlLoader, alert_id, user_name, user_id, dataset) {
         if (indivPoints.length !== 0 && networkPoints.length !== 0) {
-            let [filtIndiv, filtNetwork] = filterTimelineResults(factorFilter, indivFilter);
-            new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, "%Y-%m-%d_%H");
-            refreshNetwork(networkEdges, user_name);
+            let [filtIndiv, filtNetwork] = HomePageUtils.filterTimelineResults(factorFilter, indivFilter, indivPoints, networkPoints);
+            timelineWidget = new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, timelineInteractionCallback(htmlLoader, alert_id, dataset));
+            refreshNetwork(htmlLoader, alert_id, dataset, networkEdges, user_name);
             return;
         }
 
-        fetchTimelineAndNetworkData(alert_id, [user_id], dataset, ([hydr_posts, network]) => {
+        IdehtServiceCalls.fetchTimelineAndNetworkData(alert_id, [user_id], dataset, ([hydr_posts, network]) => {
             for (let [a_post, s_post] of hydr_posts) {
                 let post_user = s_post["author"]["name"];
+
                 let post_locations = "location_ids" in a_post && a_post["location_ids"] != null ? a_post["location_ids"] : [];
                 if (!(post_user in userPosts)) {
                     userPosts[post_user] = [];
@@ -267,145 +297,64 @@
                 }
             }
 
-            let [filtIndiv, filtNetwork] = filterTimelineResults(factorFilter, indivFilter);
-            new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, "%Y-%m-%d_%H");
-            networkEdges = network;
-            refreshNetwork(network, user_name);
+            let [filtIndiv, filtNetwork] = HomePageUtils.filterTimelineResults(factorFilter, indivFilter, indivPoints, networkPoints);
+            timelineWidget = new Timeline(timelineDiv, htmlLoader, filtNetwork, filtIndiv, timelineInteractionCallback(htmlLoader, alert_id, dataset));
+            networkEdges = JSON.parse(network["network"]);
+            userMap = network["user_name_lookup"];
+            refreshNetwork(htmlLoader, alert_id, dataset, networkEdges, user_name);
         });
     }
 
-    function onNetNodeSelect(intersected) {
-        if (intersected.getSelected()) {
-            console.log(intersected.getId());
+    function nodeSelectCallback(htmlLoader, alert_id, dataset) {
+        timelineWidget.clearHighlight();
+        mapWidget.clearHighlight();
+        return (intersected) => {
+            if (intersected.getSelected()) {
+                userFilter = userMap[intersected.labelText];
+                let postDataFunc = pageThroughUserIdFunc(alert_id, dataset);
+                postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postDataFunc);
+                showHidePostListFilter(true);
+            } else {
+                console.log("cleared network selection");
+                userFilter = null;
+                showHidePostListFilter(false);
+            }
         }
     }
 
-    function refreshNetwork(networkEdges, user_name) {
+    function refreshNetwork(htmlLoader, alert_id, dataset, networkEdges, user_name) {
         networkCanvas.innerHTML = "";
 
-        let nodes = new Set();
-        let links = [];
+        let [nodes, links] = HomePageUtils.filterNetworkLinks(networkEdges, indivFilter, user_name, factorFilter, userPosts);
+        let nodeArray = HomePageUtils.filterNetworkNodes(nodes, user_name, indivFilter, factorFilter, userPosts);
 
-        for (let edge of networkEdges) {
-            let source_id = edge["source_id"];
-            let target_id = edge["target_id"];
-            nodes.add(source_id);
-            nodes.add(target_id);
-
-            if (indivFilter != null) {
-                if (indivFilter === true) {
-                    continue; // no edges if just the individual
-                } else {
-                    if (source_id === user_name || target_id === user_name) {
-                        continue;
-                    }
-                }
-            }
-
-            let linkConfig = {
-                "sourceNodeId": source_id,
-                "targetNodeId": target_id,
-                "metaData1": 0.05,
-                "metaData2": 0.5,
-                "arrowSize": 0.2
-            };
-            if (userRgbThreat(target_id, false) != null) {
-                linkConfig["metaData2"] = 0.0;
-            }
-            links.push(linkConfig);
-        }
-        let nodeArray = [];
-        for (let node_id of nodes) {
-            if (indivFilter != null) {
-                if (indivFilter === true) {
-                    if (node_id !== user_name) {
-                        continue;
-                    }
-                } else {
-                    if (node_id === user_name) {
-                        continue;
-                    }
-                }
-            }
-
-            let nodeConfig = {"id": node_id, "metaData1": 0.5, "metaData2": 0.5, "rgb": [255, 255, 255]};
-            let worstThreat = userRgbThreat(node_id, user_name === node_id);
-            if (worstThreat != null) {
-                nodeConfig["rgb"] = worstThreat;
-                nodeConfig["metaData2"] = 0.0;
-            }
-            nodeArray.push(nodeConfig);
-        }
         let data = {"nodes": Array.from(nodeArray), "links": links};
-        IDEHTViz().setupVisualization("network-container", data, onNetNodeSelect);
+        IDEHTViz().setupVisualization("network-container", data, nodeSelectCallback(htmlLoader, alert_id, dataset));
     }
 
-    function userRgbThreat(userName, isNetwork) {
-        if (factorFilter != null) {
-            return threatRgbMap[mostSevereFilteredThreat(userName)]
-        } else {
-            let worstThreat = mostSevereFilteredThreat(userName);
-            if (worstThreat != null) {
-                return threatRgbMap[worstThreat];
-            } else if (!isNetwork) {
-                return networkRgb;
-            } else {
-                return individualRgb;
-            }
-        }
-    }
-
-    function mostSevereFilteredThreat(userName) {
-        if (!(userName in userPosts)) {
-            return null;
-        }
-        if (factorFilter != null) {
-            for (let post of userPosts[userName]) {
-                if (post[factorFilter] === true) {
-                    return factorFilter
-                }
-            }
-            return null;
-        }
-        for (let factorFilter of Object.keys(threatColorMap)) {
-            for (let post of userPosts[userName]) {
-                if (post[factorFilter] === true) {
-                    return factorFilter
-                }
-            }
-        }
-        return null;
-    }
-
-    function filterTimelineResults(filterThreatFacs, filterIndiv) {
-        let filteredIndiv = [];
-        let filteredNetwork = [];
-        for (let indivPoint of indivPoints) {
-            if (filterIndiv == null || filterIndiv) {
-                if (filterThreatFacs == null) {
-                    filteredIndiv.push(indivPoint);
-                } else if (indivPoint[filterThreatFacs] === true) {
-                    filteredIndiv.push(indivPoint);
-                }
-            }
-        }
-        for (let netPoint of networkPoints) {
-            if (filterIndiv == null || !filterIndiv) {
-                if (filterThreatFacs == null) {
-                    filteredNetwork.push(netPoint);
-                } else if (netPoint[filterThreatFacs] === true) {
-                    filteredNetwork.push(netPoint);
-                }
-            }
-        }
-        return [filteredIndiv, filteredNetwork];
-    }
-
-    let mapWidget = null;
     let locations = [];
     let facilities = [];
 
-    function refreshMap(alertInfo) {
+    function mapInteractionCallback(htmlLoader, alert_id, dataset) {
+        return ({
+            onLocationSelected: function (locationId) {
+                timelineWidget.clearHighlight();
+                if (locationId === null) {
+                    showHidePostListFilter(false);
+                } else {
+                    locationFilter = locationId;
+                    let postFunc = pageThroughLocationPostsFunc(alert_id, dataset);
+                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
+                    showHidePostListFilter(true);
+                }
+            }
+        })
+    }
+
+    function refreshMap(htmlLoader, alertInfo) {
+        let alert_id = alertInfo["alert_id"];
+        let dataset = alertInfo["datasets"]["GAB"];
+
         if (mapWidget != null) {
             if (factorFilter != null) {
                 let filtLocations = [];
@@ -424,10 +373,11 @@
         }
 
         let shermanOaksBB = [-118.6, 33.66, -118.0, 34.2];
-        fetchLocationData(alertInfo, null, ([locs, facs]) => {
+        IdehtServiceCalls.fetchLocationData(alertInfo, null, ([locs, facs]) => {
             locations = Object.keys(locs).map((x) => JSON.parse(x));
             facilities = facs;
-            mapWidget = new MapWidget(mapDiv, shermanOaksBB, locations, facilities);
+            mapWidget = new MapWidget(mapDiv, shermanOaksBB, locations, facilities,
+                mapInteractionCallback(htmlLoader, alert_id, dataset));
         });
     }
 
@@ -437,13 +387,26 @@
         let user_id = user_info["id"];
         let dataset = alertInfo["datasets"]["GAB"];
 
-        refreshPostList(htmlLoader, alert_id, user_id, dataset);
+        let postFetchFunc = pageThroughPostsFunc(alert_id, user_id, dataset);
+        postListDiv = PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
         refreshTimelineAndNetwork(htmlLoader, alert_id, user_info["name"], user_id, dataset);
-        refreshMap(alertInfo);
+        refreshMap(htmlLoader, alertInfo);
+
+        if (galleryWidget == null) {
+            IdehtServiceCalls.fetchWordFreqData(alert_id, (wordFreqs) => {
+                let wordFreqMap = wordFreqs.reduce((map, obj) => {
+                    map[obj[0]] = obj[1];
+                    return map;
+                }, {});
+
+                registerGalleryToggle(htmlLoader, alert_id, wordFreqMap);
+                galleryWidget = new GalleryView(galleryDiv, htmlLoader)
+            });
+        }
     }
 
     function onDependsLoad(htmlLoader) {
-        fetchAndParse('alerts/list', (alertList) => {
+        DataFetchUtils.fetchJson('alerts/list', (alertList) => {
             if (alertList.length === 0) {
                 // TODO show somewhere on the screen
             } else {
@@ -452,7 +415,14 @@
                 new OverviewColumn(overviewDiv, htmlLoader, firstAlert);
 
                 registerFilterEvents(htmlLoader, firstAlert);
-                displayAlertData(htmlLoader, firstAlert, "created_day")
+                displayAlertData(htmlLoader, firstAlert, "created_day");
+
+                document.getElementById("post-filter-return").addEventListener("click", () => {
+                    timelineWidget.clearHighlight();
+                    mapWidget.clearHighlight();
+                    showHidePostListFilter(false);
+                    refreshImageGallery(firstAlert["alert_id"], mainPostListIds)
+                });
             }
         });
     }

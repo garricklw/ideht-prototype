@@ -1474,7 +1474,7 @@ var VisualizationSandbox = function() {
 
 //		event.preventDefault();
 		
-		if (that.INTERSECTED != undefined && that.INTERSECTED != null) {
+		if (that.INTERSECTED !== undefined && that.INTERSECTED !== null) {
 		
 			if (that.detectLeftButton(event)) {
 				if (that.INTERSECTED.getId() === that.mouseDownObjectName) {
@@ -1482,6 +1482,8 @@ var VisualizationSandbox = function() {
 							that.toggleSelected();		
 					}
 					//that.toggleAnimation();
+				} else {
+					that.selectionChangeCallback(null);
 				}
 			} else if (that.detectRightButton(event)) {
 
@@ -1954,8 +1956,8 @@ var VisualizationSandbox = function() {
 		}
 		
 		that.attachTransformRandomly();
-		if (that.selectionChangeCallback != undefined || that.selectionChangeCallback != null) {
-			that.selectionChangeCallback.call(that);
+		if (that.selectionChangeCallback !== undefined) {
+			that.selectionChangeCallback.call(that.INTERSECTED);
 		}
 		if (document.getElementById("searchBox").value.length > 0 && !document.getElementById("searchBox").value.includes("MODIFIED")) {
 			if (that.controlDown) {
