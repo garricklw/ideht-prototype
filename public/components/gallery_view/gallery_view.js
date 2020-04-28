@@ -11,10 +11,34 @@ export function GalleryView(parentNode, htmlDepends) {
 
     let wordCloud = that.shadow.getElementById("word-cloud");
     let imageGallery = that.shadow.getElementById("image-gallery");
-    let imageRenders = that.shadow.getElementById("image-gallery");
+    let prevPage = that.shadow.getElementById("prev-page");
+    let nextPage = that.shadow.getElementById("next-page");
 
-    that.displayImageGallery = function (images) {
-        let pageNum = 0;
+    let hasPrev = false;
+    let hasNext = false;
+    let allImages = [];
+    let pageNum = 0;
+
+    prevPage.addEventListener("mouseup", () => {
+        if (!hasPrev) {
+            return;
+        }
+        showImagePage(allImages, --pageNum);
+    });
+
+    nextPage.addEventListener("mouseup", () => {
+        if (!hasNext) {
+            return;
+        }
+        showImagePage(allImages, ++pageNum);
+    });
+
+    that.displayImageGallery = function (images, resetPages) {
+        if (resetPages) {
+            allImages = images;
+            pageNum = 0;
+        }
+
         showImagePage(images, pageNum)
     };
 
@@ -41,6 +65,19 @@ export function GalleryView(parentNode, htmlDepends) {
                 img.style.width = "100%";
                 columns[colCount++ % 3].appendChild(img);
             }
+        }
+
+        hasPrev = pageNum !== 0;
+        hasNext = images.length > firstImg + imagesPerPage;
+        updateButtonFont(prevPage, hasPrev);
+        updateButtonFont(nextPage, hasNext);
+    }
+
+    function updateButtonFont(button, enabled) {
+        if (enabled) {
+            button.style.color = "black"
+        } else {
+            button.style.color = "lightgrey"
         }
     }
 

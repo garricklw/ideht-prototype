@@ -12,9 +12,23 @@
         border-radius: 8px;
         pointer-events: none;
     }
+
+    .legendBox {
+        width: 20px;
+        height: 20px;
+        margin-left: 20px;
+        border: 1px solid black
+    }
 </style>
 
 <body class="bodyDefault inheritSize">
-<div class="inheritSize" id="bar-chart">
+<div id="bar-chart" style="width: 100%; height: 75%"></div>
+<div class="flexhorizont">
+    <div id="individual-box" class="legendBox" style="background-color: var(--individual-color)"></div>
+    <div class="vertAlignMiddle textSpacer">Individual</div>
+</div>
+<div class="flexhorizont" style="margin-top: 7px">
+    <div class="legendBox" style="background-color: var(--network-color);"></div>
+    <div class="vertAlignMiddle textSpacer">Network</div>
 </div>
 </body>

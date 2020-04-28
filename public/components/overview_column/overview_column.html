@@ -51,8 +51,8 @@
     }
 
     .dividerMargins {
-        margin-top: 4px;
-        margin-bottom: 4px;
+        margin-top: 0.5%;
+        margin-bottom: 0.5%;
     }
 
     .headerMargins {
@@ -64,55 +64,136 @@
         margin-top: 10px;
         margin-left: 20px;
     }
+
+    .accountBox {
+        width: 90%;
+        border: 1px solid gray;
+        margin: 10px auto;
+        padding: 5px;
+    }
 </style>
 
 <body class="bodyDefault inheritSize rel">
-<div id="user-overview-box">
-    <div class="flexhorizont">
-        <img id="alert-image" src="images/icons8-error-96.png">
+<div id="user-overview-box" style="height: 13%">
+    <div class="flexhorizont" style="height: 58%">
+        <img id="alert-image" src="images/icons8-error-96.png" style="height: 100%">
         <div id="user-name" class="centerAlignText cardText"></div>
     </div>
     <div id="alert-level" class="cardL2Text"><b>Level 3</b></div>
-    <div id="alert-date" class="cardL2Text"></div>
+    <div class="alert-date cardL2Text"></div>
 </div>
 <div class="listDivider dividerMargins"></div>
 
-<div class="flexhorizont headerMargins">
-    <div><b class="cardH1Text">Threat Overview</b></div>
-</div>
-<div id="bar-graph-div" style="height: 25%; margin-left: 5px"></div>
-<div class="listDivider dividerMargins"></div>
+<div class="rel" style="height: 84%">
+    <div class="flexhorizont headerMargins">
+        <div><b class="cardH1Text">Threat Overview</b></div>
+    </div>
+    <div id="bar-graph-div" style="height: 30%; margin-left: 5px"></div>
+    <div class="listDivider dividerMargins"></div>
 
-<div><b class="cardH1Text headerMargins">Profile Overview</b></div>
-<div class="flexhorizont h2Margins">
-    <div class="cardH2Text">Identifier:</div>
-    <div id="user-identifier" class="textSpacer vertAlignMiddle">Wayne</div>
-</div>
-<div class="flexhorizont h2Margins">
-    <div class="cardH2Text"># of Accounts:</div>
-    <div id="num-accounts" class="textSpacer vertAlignMiddle">1</div>
-</div>
-<div class="flexhorizont h2Margins">
-    <div class="cardH2Text">Platforms:</div>
-    <div id="platforms-list" class="textSpacer vertAlignMiddle">Gab</div>
+    <div id="profile-overview">
+        <div><b class="cardH1Text headerMargins">Profile Overview</b></div>
+        <div class="flexhorizont h2Margins">
+            <div class="cardH2Text">Identifier:</div>
+            <div id="user-identifier" class="textSpacer vertAlignMiddle">Luke</div>
+        </div>
+        <div class="flexhorizont h2Margins">
+            <div class="cardH2Text"># of Accounts:</div>
+            <div id="num-accounts" class="textSpacer vertAlignMiddle">1</div>
+        </div>
+        <div class="flexhorizont h2Margins">
+            <div class="cardH2Text">Platforms:</div>
+            <div id="platforms-list" class="textSpacer vertAlignMiddle">Gab</div>
+        </div>
+        <div class="flexhorizont h2Margins">
+            <div class="cardH2Text">Known Handles:</div>
+            <div id="handles-list" class="textSpacer vertAlignMiddle">@lkusa</div>
+        </div>
+    </div>
+
+    <div id="see-profile-details" class="rightAlignText textButton">
+        See Details >>
+    </div>
+    <div class="listDivider dividerMargins"></div>
+
+    <div><b class="cardH1Text headerMargins">Related Alerts Overview</b></div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text"># of Related Alerts:</div>
+        <div id="num-related-alerts" class="textSpacer vertAlignMiddle">1</div>
+    </div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text">Original Alert Date:</div>
+        <div id="original-alert-date" class="textSpacer vertAlignMiddle">04/16/2020</div>
+    </div>
+
+    <div id="see-related-alerts" class="abs textButton" style="right: 8px; bottom: 8px;">
+        See Related Alerts >>
+    </div>
+
+    <div id="overlap-content" class="abs top overlap notRendered"></div>
 </div>
 
-<div id="see-profile-details" class="rightAlignText textButton">
-    See Details >>
-</div>
-<div class="listDivider dividerMargins"></div>
+<!-- Just here to copy into the overlay, doesn't matter where this code is in this file-->
+<div class="notRendered" id="accounts-list">
+    <div class="listDivider dividerMargins"></div>
+    <div><b class="cardH1Text headerMargins">Accounts</b></div>
+    <div class="accountBox">
+        <div class="flexhorizont">
+            <div>
+                <div>Handle: @lkusa</div>
+                <div>Platform: Gab</div>
+                <div>Created: 03/30/2017</div>
+                <div>Bio: Doctorate in Cliterature.</div>
+            </div>
+            <img src="https://gab.com/media/user/58c1925fdf947.JPG" style="width: 28%;">
+        </div>
+    </div>
 
-<div><b class="cardH1Text headerMargins">Related Alerts Overview</b></div>
-<div class="flexhorizont h2Margins">
-    <div class="cardH2Text"># of Related Alerts:</div>
-    <div id="num-related-alerts" class="textSpacer vertAlignMiddle">2</div>
+    <div id="return-from-profiles" class="abs textButton" style="bottom: 8px; right: 8px"><< Return</div>
 </div>
-<div class="flexhorizont h2Margins">
-    <div class="cardH2Text">Original Alert Date:</div>
-    <div id="original-alert-date" class="textSpacer vertAlignMiddle">2/20/2020</div>
+<div class="notRendered" id="alerts-overview">
+    <div class="listDivider dividerMargins"></div>
+    <div><b class="cardH1Text headerMargins">Alerts Overview</b></div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text"># of associated Alerts:</div>
+        <div id="num-associated-alerts" class="textSpacer vertAlignMiddle">1</div>
+    </div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text">Original Alert Date:</div>
+        <div id="original-alert-date-overview" class="textSpacer vertAlignMiddle">04/16/2020</div>
+    </div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text">Network Alerts:</div>
+        <div id="network-alerts" class="textSpacer vertAlignMiddle">0</div>
+    </div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text">Individual Alerts:</div>
+        <div id="indiv-alerts" class="textSpacer vertAlignMiddle">2</div>
+    </div>
+    <div class="flexhorizont h2Margins">
+        <div class="cardH2Text">Aggregate Severity of Alerts:</div>
+        <div id="aggregate-severity" class="textSpacer vertAlignMiddle">3</div>
+    </div>
+
+    <div class="listDivider dividerMargins"></div>
+    <div><b class="cardH1Text headerMargins">Related Alerts</b></div>
+    <div class="accountBox flexhorizont" style="height: 60px;">
+        <img src="images/icons8-error-96.png" style="height: 95%">
+        <div class="vertAlignMiddle">
+            <div class="cardL2Text"><b>Level 3</b></div>
+            <div class="alert-date cardL2Text"></div>
+        </div>
+    </div>
+    <div class="accountBox flexhorizont" style="height: 60px;">
+        <img src="images/icons8-error-96.png" style="height: 95%">
+        <div class="vertAlignMiddle">
+            <div class="cardL2Text"><b>Level 2</b></div>
+            <div class="cardL2Text">04/16/2020, 6:14:46 PM</div>
+        </div>
+    </div>
+
+    <div id="return-from-alerts" class="abs textButton" style="bottom: 8px; right: 8px"><< Return</div>
 </div>
-<div id="see-related-alerts" class="abs textButton" style="right: 8px; bottom: 8px;">
-    See Related Alerts >>
-</div>
+
 
 </body>

@@ -1,3 +1,14 @@
+:root {
+    --individual-color: #303030;
+    --network-color: #c0c0c0;
+    --proximity-color: #008000;
+    --installation-color: #5555FF;
+    --radical-color: #e6e037;
+    --violence-color: #800080;
+
+    --highlight-color: #FBFE11;
+}
+
 #overview-container {
     height: 100%;
     border-right: 1px solid lightslategrey

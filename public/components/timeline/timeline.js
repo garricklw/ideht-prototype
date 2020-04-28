@@ -1,6 +1,6 @@
 // import * as d3 from "/public/javascripts/d3";
 
-import {networkColor, individualColor, threatColorMap} from "../../javascripts/ideht_colors.js";
+import {networkColor, individualColor, threatColorMap, highlightColor} from "../../javascripts/ideht_colors.js";
 
 export let timelineInteractionCallback = {
     onAlertSelected: function (postId) {
@@ -45,41 +45,99 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         return color;
     }
 
+    function hasThreatFactorColor(post, threatFactor) {
+        if (post[threatFactor] === true) {
+            return threatColorMap[threatFactor];
+        }
+        return null;
+    }
+
     that.displayTicks = function (alert_infos, y_idx) {
-        let graphBars = that.chart.selectAll(".bar" + y_idx)
-            .data(alert_infos)
-            .enter().append("rect")
-            .on("mouseup", (d) => {
-                timelineInteractionCallback.onAlertSelected(d["post_id"]);
-                let rect = d3.event.currentTarget;
-                let x = rect.attributes["x"].value;
-                let y = rect.attributes["y"].value;
+        let graphBars = [];
+        for (let alertInfo of alert_infos) {
+            let clickOnAlert = () => {
+                timelineInteractionCallback.onAlertSelected(alertInfo["post_id"]);
+                let x = bgRect.attr("x");
+                let y = bgRect.attr("y");
                 that.highlightCircle
                     .attr("cx", +x + 4)
                     .attr("cy", +y + (that.y.bandwidth() / 2.0))
                     .attr("display", "block");
-                that.highlightFollow = rect;
-            })
-            .attr("class", "bar" + y_idx)
-            .attr("x", function (d) {
-                return that.graphXData(new Date(d["created_day"] * 1000));
-            })
-            .attr("width", 8)
-            .attr("y", that.y(y_idx))
-            .attr("height", that.y.bandwidth())
-            .attr("fill", d => alertPostToColor(d));
+                that.highlightFollow = bgRect;
+            };
+            let bgRect = that.chart.append("rect")
+                .on("click", clickOnAlert)
+                .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+                .attr("width", 8)
+                .attr("y", that.y(y_idx))
+                .attr("height", that.y.bandwidth())
+                .attr("fill", "white")
+                .attr("stroke-width", "1px")
+                .attr("stroke", "gray");
+            graphBars.push([bgRect, alertInfo]);
 
-        that.navElem.selectAll(".navbar" + y_idx)
-            .data(alert_infos)
-            .enter().append("rect")
-            .attr("class", "navbar" + y_idx)
-            .attr("x", function (d) {
-                return that.navXData(new Date(d["created_day"] * 1000));
-            })
-            .attr("width", 5)
-            .attr("y", that.navY(y_idx))
-            .attr("height", that.navY.bandwidth())
-            .attr("fill", d => alertPostToColor(d));
+            that.navElem.append("rect")
+                .on("click", clickOnAlert)
+                .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
+                .attr("width", 5)
+                .attr("y", that.navY(y_idx))
+                .attr("height", that.navY.bandwidth())
+                .attr("fill", "white")
+                .attr("stroke-width", "1px")
+                .attr("stroke", "gray");
+
+            let i = 0;
+            for (let threatFactor of Object.keys(threatColorMap)) {
+                if (hasThreatFactorColor(alertInfo, threatFactor) == null) {
+                    i++;
+                    continue;
+                }
+                let subRect = that.chart.append("rect")
+                    .on("click", clickOnAlert)
+                    .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+                    .attr("width", 8)
+                    .attr("y", that.y(y_idx) + ((that.y.bandwidth() / 4.0) * i))
+                    .attr("height", that.y.bandwidth() / 4.0)
+                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor));
+                graphBars.push([subRect, alertInfo]);
+
+                that.navElem.append("rect")
+                    .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
+                    .attr("width", 5)
+                    .attr("y", that.navY(y_idx) + ((that.navY.bandwidth() / 4.0) * i))
+                    .attr("height", that.navY.bandwidth() / 4.0)
+                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor));
+                i++;
+            }
+
+            // let graphBar = that.chart.append("rect")
+            //     .on("mouseup", () => {
+            //         timelineInteractionCallback.onAlertSelected(alertInfo["post_id"]);
+            //         let rect = d3.event.currentTarget;
+            //         let x = rect.attributes["x"].value;
+            //         let y = rect.attributes["y"].value;
+            //         that.highlightCircle
+            //             .attr("cx", +x + 4)
+            //             .attr("cy", +y + (that.y.bandwidth() / 2.0))
+            //             .attr("display", "block");
+            //         that.highlightFollow = rect;
+            //     })
+            //     .attr("class", "bar" + y_idx)
+            //     .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+            //     .attr("width", 8)
+            //     .attr("y", that.y(y_idx))
+            //     .attr("height", that.y.bandwidth())
+            //     .attr("fill", alertPostToColor(alertInfo));
+            // graphBars.push([graphBar, alertInfo]);
+
+            // that.navElem.append("rect")
+            //     .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
+            //     .attr("width", 5)
+            //     .attr("y", that.navY(y_idx))
+            //     .attr("height", that.navY.bandwidth())
+            //     .attr("fill", alertPostToColor(alertInfo));
+        }
+
         return graphBars;
     };
 
@@ -90,12 +148,12 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         if (!that.isInit) {
             return;
         }
-        ticks.attr("x", function (d) {
-            return that.graphXData(new Date(d["created_day"] * 1000));
-        });
+        for (let [graphBar, alertInfo] of ticks) {
+            graphBar.attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+        }
         if (that.highlightCircle != null && that.highlightFollow != null) {
-            let x = that.highlightFollow.attributes["x"].value;
-            let y = that.highlightFollow.attributes["y"].value;
+            let x = that.highlightFollow.attr("x");
+            let y = that.highlightFollow.attr("y");
             that.highlightCircle
                 .attr("cx", +x + 4)
                 .attr("cy", +y + (that.y.bandwidth() / 2.0))
@@ -140,7 +198,7 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
 
         that.highlightCircle = that.chart.append("circle")
             .attr("r", 30)
-            .attr("fill", "#FBFE11")
+            .attr("fill", highlightColor)
             .attr("fill-opacity", 0.4)
             .attr("display", "none");
 
@@ -181,10 +239,10 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         that.navXData = d3.scaleTime().range([0, that.chartWidth]);
         that.y = d3.scaleBand()
             .range([0, that.height])
-            .padding(0.5);
+            .padding(0.4);
         that.navY = d3.scaleBand()
             .range([0, that.navHeight])
-            .padding(0.4);
+            .padding(0.3);
 
         that.graphXData.domain(xExtent);
         that.y.domain(["Network", "Individual"]);
@@ -210,7 +268,9 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
             .attr("class", "axis y-axis0")
             .call(that.yAxis);
         let ticks = yAxis.selectAll(".tick");
-        ticks.attr("stroke", (d, i) => i === 0 ? networkColor : individualColor)
+        ticks.attr("stroke", (d, i) => i === 0 ? networkColor : individualColor);
+        let axisTexts = yAxis.selectAll("text");
+        axisTexts.attr("fill", null);
     };
 
     this.initNavBox = function () {

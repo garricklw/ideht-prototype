@@ -2,6 +2,15 @@ import {DataFetchUtils} from "../common/utils/DataFetchUtils.js";
 
 export class IdehtServiceCalls {
 
+    static fetchThreatOverviewCounts(alert_id, user_id, onData) {
+        let indivThreatCountUrl = IdehtServiceCalls.baseService + "overview?alert_id=" + alert_id
+            + "&user_ids=" + user_id + "&is_indiv=true";
+        let networkThreatCountUrl = IdehtServiceCalls.baseService + "overview?alert_id=" + alert_id
+            + "&user_ids=" + user_id + "&is_indiv=false";
+
+        DataFetchUtils.fetchMultiJson([indivThreatCountUrl, networkThreatCountUrl], onData)
+    }
+
     static fetchPostListData(alert_id, user_id, dataset, pageOffset,
                              sortBy, filterThreatFac, filterIndiv, filterLocation, filterPosts, filterUserId, onData) {
         let postUrl = IdehtServiceCalls.baseService + "posts?alert_id=" + alert_id + "&dataset=" + dataset;

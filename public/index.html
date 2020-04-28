@@ -1,4 +1,4 @@
-<html>
+<html lang="en">
 
 <head>
     <title>Post List Demo</title>
@@ -7,10 +7,8 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
     <script src="common/widgets/word_cloud/d3.layout.cloud.js"></script>
-
-    <script src="components/idehtviz/javascript/vs-min.js"></script>
-    <script src="components/idehtviz/javascript/ideht.js"></script>
 
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -49,7 +47,7 @@
                 </select>
             </div>
             <div class="headerMargins">
-                <img id="gallery-toggle" class="clickable" src="images/icons8-image-48.png" style="width: 30px"/>
+                <img id="gallery-toggle" class="clickable" src="images/icons8-image-48.png" style="height: 37%"/>
             </div>
         </div>
         <div class="flexhorizont" style="width: 100%; height: 93%;">
@@ -87,13 +85,14 @@
     import {MapWidget} from "./components/map/MapWidget.js";
     import {Timeline} from "./components/timeline/timeline.js";
     import {OverviewColumn} from "./components/overview_column/overview_column.js";
-    import {threatColorMap, threatRgbMap, individualRgb, networkRgb} from "./javascripts/ideht_colors.js";
     import {IdehtServiceCalls} from "./javascripts/IdehtServiceCalls.js";
     import {DataFetchUtils} from "./common/utils/DataFetchUtils.js";
-    import {DomUtils} from "./common/utils/DomUtils.js";
     import {HomePageUtils} from "./javascripts/HomePageUtils.js";
     import {GalleryView} from "./components/gallery_view/gallery_view.js";
     import {LoadHtmlDepends} from "./common/utils/LoadHtmlDepends.js";
+    import {idehtNetvizConfig} from "./components/configs/ideht-netviz-config.js";
+    import {NetVizer} from "./netvizer/src/netvizer.js";
+    import {IdehtNetvizConfigMods} from "./components/configs/ideht-netviz-config.js";
 
     let overviewDiv = document.getElementById("overview-container");
     let postListDiv = document.getElementById("post-list");
@@ -132,7 +131,8 @@
                     mainPostListIds = null;
                 }
             }
-            refreshImageGallery(alert_id, filteredPostIds);
+
+            refreshImageGallery(alert_id, filteredPostIds, pageOffset === 0);
             passThroughFunc(posts);
         }
     }
@@ -165,9 +165,12 @@
         }
     }
 
+    let overviewWidget = null;
     let timelineWidget = null;
     let mapWidget = null;
     let galleryWidget = null;
+    let netvizer = null;
+    let netvizConfig = null;
 
     let sortBy = "created_day";
     let factorFilter = null;
@@ -192,9 +195,9 @@
         });
     }
 
-    function refreshImageGallery(alert_id, filteredPostIds) {
+    function refreshImageGallery(alert_id, filteredPostIds, isPageReset) {
         IdehtServiceCalls.fetchImageUrls(alert_id, filteredPostIds, (imageUrls) => {
-            galleryWidget.displayImageGallery(imageUrls)
+            galleryWidget.displayImageGallery(imageUrls, isPageReset)
         });
     }
 
@@ -227,11 +230,11 @@
         sortSelect.addEventListener("change", () => {
             sortBy = sortSelect.value;
             let postFetchFunc = pageThroughPostsFunc(alert_id, user_id, dataset);
-            PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
+            postListDiv = PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
         });
     }
 
-    function showHidePostListFilter(isShow) {
+    function showHidePostListFilter(alert_id, isShow) {
         let postListFilterBox = document.getElementById("post-list-subfilter-box");
         if (isShow) {
             postListFilterBox.style.display = "block";
@@ -240,6 +243,7 @@
             locationFilter = null;
             postFilter = null;
             userFilter = null;
+            refreshImageGallery(alert_id, mainPostListIds, true)
         }
     }
 
@@ -254,13 +258,15 @@
         return ({
             onAlertSelected: function (postId) {
                 mapWidget.clearHighlight();
+                netvizConfig.clearHighlight();
+                netvizer.redrawGraph();
                 if (postId === null) {
-                    showHidePostListFilter(false);
+                    showHidePostListFilter(alert_id, false);
                 } else {
                     postFilter = [postId];
                     let postFunc = pageThroughPostIdsFunc(alert_id, dataset);
                     postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
-                    showHidePostListFilter(true);
+                    showHidePostListFilter(alert_id, true);
                 }
             }
         })
@@ -308,16 +314,16 @@
     function nodeSelectCallback(htmlLoader, alert_id, dataset) {
         timelineWidget.clearHighlight();
         mapWidget.clearHighlight();
-        return (intersected) => {
-            if (intersected.getSelected()) {
-                userFilter = userMap[intersected.labelText];
+        return (clickedNodeId) => {
+            if (clickedNodeId !== null) {
+                userFilter = userMap[clickedNodeId];
                 let postDataFunc = pageThroughUserIdFunc(alert_id, dataset);
                 postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postDataFunc);
-                showHidePostListFilter(true);
+                showHidePostListFilter(alert_id, true);
             } else {
                 console.log("cleared network selection");
                 userFilter = null;
-                showHidePostListFilter(false);
+                showHidePostListFilter(alert_id, false);
             }
         }
     }
@@ -325,12 +331,63 @@
     function refreshNetwork(htmlLoader, alert_id, dataset, networkEdges, user_name) {
         networkCanvas.innerHTML = "";
 
-        let [nodes, links] = HomePageUtils.filterNetworkLinks(networkEdges, indivFilter, user_name, factorFilter, userPosts);
-        let nodeArray = HomePageUtils.filterNetworkNodes(nodes, user_name, indivFilter, factorFilter, userPosts);
+        let netData = {nodes: [], links: []};
+        let nodeSet = new Set();
+        for (let edge of networkEdges) {
+            nodeSet.add(edge["source_id"]);
+            nodeSet.add(edge["target_id"]);
 
-        let data = {"nodes": Array.from(nodeArray), "links": links};
-        IDEHTViz().setupVisualization("network-container", data, nodeSelectCallback(htmlLoader, alert_id, dataset));
+            netData.links.push({source: edge["source_id"], target: edge["target_id"], weight: 1});
+        }
+        for (let node of nodeSet) {
+            netData.nodes.push({id: node, name: node});
+        }
+
+        let uoiNode = null;
+        let nodeToRadianMap = {};
+        let filteredNetwork = {
+            "nodes": netData.nodes.filter((node) => {
+                if (node.id === user_name) {
+                    uoiNode = node;
+                }
+                nodeToRadianMap[node.name] = HomePageUtils.userRgbRadians(node.name, node.name !== user_name, factorFilter, userPosts);
+                return HomePageUtils.isNodeVisible(node, indivFilter, user_name);
+            }),
+            "links": netData.links.filter((edge) => HomePageUtils.isEdgeVisible(edge, indivFilter, user_name))
+        };
+        // let testNetwork = {
+        //     nodes: [{id: "lkusa", name: "lkusa"}, {id: "SABO", name: "SABO"}],
+        //     links: [{source: "lkusa", target: "SABO"}, {source: "SABO", target: "lkusa"}]
+        // };
+        // filteredNetwork = testNetwork;
+
+        if (netvizer == null || netvizer.getdata().nodes.length !== filteredNetwork.nodes.length) {
+            netvizConfig = idehtNetvizConfig(nodeToRadianMap, filteredNetwork.links, user_name, nodeSelectCallback(htmlLoader, alert_id, dataset));
+            netvizer = new NetVizer(filteredNetwork, netvizConfig);
+            netvizer.startViz(networkCanvas, 500);
+            setTimeout(() => {
+                if ("x" in uoiNode && "y" in uoiNode) {
+                    netvizer.translateTo(uoiNode.x, uoiNode.y);
+                } else {
+                    netvizer.resetZoom();
+                }
+                netvizer.zoomTo(0.5);
+            }, 500);
+        } else {
+            netvizConfig.updateColorFunc(nodeToRadianMap);
+            netvizer.redrawGraph(netvizConfig);
+        }
     }
+
+    // function refreshNetwork(htmlLoader, alert_id, dataset, networkEdges, user_name) {
+    //     networkCanvas.innerHTML = "";
+    //
+    //     let [nodes, links] = HomePageUtils.filterNetworkLinks(networkEdges, indivFilter, user_name, factorFilter, userPosts);
+    //     let nodeArray = HomePageUtils.filterNetworkNodes(nodes, user_name, indivFilter, factorFilter, userPosts);
+    //
+    //     let data = {"nodes": Array.from(nodeArray), "links": links};
+    //     IDEHTViz().setupVisualization("network-container", data, nodeSelectCallback(htmlLoader, alert_id, dataset));
+    // }
 
     let locations = [];
     let facilities = [];
@@ -339,13 +396,15 @@
         return ({
             onLocationSelected: function (locationId) {
                 timelineWidget.clearHighlight();
+                netvizConfig.clearHighlight();
+                netvizer.redrawGraph();
                 if (locationId === null) {
-                    showHidePostListFilter(false);
+                    showHidePostListFilter(alert_id, false);
                 } else {
                     locationFilter = locationId;
                     let postFunc = pageThroughLocationPostsFunc(alert_id, dataset);
                     postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
-                    showHidePostListFilter(true);
+                    showHidePostListFilter(alert_id, true);
                 }
             }
         })
@@ -387,6 +446,12 @@
         let user_id = user_info["id"];
         let dataset = alertInfo["datasets"]["GAB"];
 
+        if (overviewWidget == null) {
+            IdehtServiceCalls.fetchThreatOverviewCounts(alert_id, user_id, ([indiv_counts, network_counts]) => {
+                overviewWidget = new OverviewColumn(overviewDiv, htmlLoader, user_info, alertInfo["creation_date"], indiv_counts, network_counts);
+            });
+        }
+
         let postFetchFunc = pageThroughPostsFunc(alert_id, user_id, dataset);
         postListDiv = PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
         refreshTimelineAndNetwork(htmlLoader, alert_id, user_info["name"], user_id, dataset);
@@ -412,16 +477,15 @@
             } else {
                 let firstAlert = alertList[1];
 
-                new OverviewColumn(overviewDiv, htmlLoader, firstAlert);
-
                 registerFilterEvents(htmlLoader, firstAlert);
                 displayAlertData(htmlLoader, firstAlert, "created_day");
 
                 document.getElementById("post-filter-return").addEventListener("click", () => {
                     timelineWidget.clearHighlight();
                     mapWidget.clearHighlight();
-                    showHidePostListFilter(false);
-                    refreshImageGallery(firstAlert["alert_id"], mainPostListIds)
+                    netvizConfig.clearHighlight();
+                    netvizer.redrawGraph();
+                    showHidePostListFilter(firstAlert["alert_id"], false);
                 });
             }
         });

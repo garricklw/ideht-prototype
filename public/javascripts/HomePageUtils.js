@@ -1,21 +1,70 @@
-import {individualRgb, networkRgb, threatColorMap, threatRgbMap} from "./ideht_colors.js";
+import {
+    threatColorMap,
+    threatRgbMap,
+    threatHueMap,
+    individualHsv,
+    networkHsv,
+    networkColor,
+    individualColor
+} from "./ideht_colors.js";
 
 export class HomePageUtils {
 
-    static userRgbThreat(userName, isNetwork, factorFilter, userPosts) {
+    static userHueThreat(userName, isNetwork, factorFilter, userPosts) {
         if (factorFilter != null) {
-            return threatRgbMap[HomePageUtils.mostSevereFilteredThreat(userName, factorFilter, userPosts)]
+            let threatHue = threatHueMap[HomePageUtils.mostSevereFilteredThreat(userName, factorFilter, userPosts)];
+            return threatHue == null ? [0, 0, 0.9] : threatHue;
         } else {
             let worstThreat = HomePageUtils.mostSevereFilteredThreat(userName, factorFilter, userPosts);
             if (worstThreat != null) {
-                return threatRgbMap[worstThreat];
+                return threatHueMap[worstThreat];
             } else if (!isNetwork) {
-                return networkRgb;
+                return individualHsv;
             } else {
-                return individualRgb;
+                return networkHsv;
             }
         }
     }
+
+    static userRgbRadians(userName, isNetwork, factorFilter, userPosts) {
+        let presentThreats = null;
+        if (factorFilter != null) {
+            presentThreats = HomePageUtils.presentThreats(userName, factorFilter, userPosts);
+            if (presentThreats.size === 0) {
+                return {"#d3d3d3": Math.PI * 2};
+            }
+        } else {
+            presentThreats = HomePageUtils.presentThreats(userName, factorFilter, userPosts);
+            if (presentThreats.size === 0) {
+                if (isNetwork) {
+                    return {[networkColor]: Math.PI * 2};
+                } else {
+                    return {[individualColor]: Math.PI * 2};
+                }
+            }
+        }
+        let radPerHue = (2.0 * Math.PI) / presentThreats.size;
+        let hueToRadians = {};
+        for (let threat of presentThreats) {
+            hueToRadians[threatColorMap[threat]] = radPerHue;
+        }
+        return hueToRadians;
+    }
+
+    // static userRgbThreat(userName, isNetwork, factorFilter, userPosts) {
+    //     if (factorFilter != null) {
+    //         return threatRgbMap[HomePageUtils.mostSevereFilteredThreat(userName, factorFilter, userPosts)]
+    //     } else {
+    //         let worstThreat = HomePageUtils.mostSevereFilteredThreat(userName, factorFilter, userPosts);
+    //         if (worstThreat != null) {
+    //             return threatRgbMap[worstThreat];
+    //         } else if (!isNetwork) {
+    //             return networkRgb;
+    //         } else {
+    //             return individualRgb;
+    //         }
+    //     }
+    // }
 
     static mostSevereFilteredThreat(userName, factorFilter, userPosts) {
         if (!(userName in userPosts)) {
@@ -37,6 +86,30 @@ export class HomePageUtils {
             }
         }
         return null;
+    }
+
+    static presentThreats(userName, factorFilter, userPosts) {
+        let threats = new Set();
+        if (!(userName in userPosts)) {
+            return threats;
+        }
+        if (factorFilter != null) {
+            for (let post of userPosts[userName]) {
+                if (post[factorFilter] === true) {
+                    threats.add(factorFilter);
+                    return threats;
+                }
+            }
+            return threats;
+        }
+        for (let factorFilter of Object.keys(threatColorMap)) {
+            for (let post of userPosts[userName]) {
+                if (post[factorFilter] === true) {
+                    threats.add(factorFilter);
+                }
+            }
+        }
+        return threats;
     }
 
     static filterTimelineResults(filterThreatFacs, filterIndiv, indivPoints, networkPoints) {
@@ -61,6 +134,34 @@ export class HomePageUtils {
             }
         }
         return [filteredIndiv, filteredNetwork];
+    }
+
+    static isEdgeVisible(edge, indivFilter, user_name) {
+        if (indivFilter != null) {
+            if (indivFilter === true) {
+                return false; // no edges if just the individual
+            } else {
+                if (edge.source === user_name || edge.target === user_name) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    static isNodeVisible(node, indivFilter, user_name) {
+        if (indivFilter != null) {
+            if (indivFilter === true) {
+                if (node.name !== user_name) {
+                    return false;
+                }
+            } else {
+                if (node.name === user_name) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     static filterNetworkLinks(networkEdges, indivFilter, user_name, factorFilter, userPosts) {

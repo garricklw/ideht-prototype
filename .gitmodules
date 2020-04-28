@@ -1,3 +1,7 @@
 [submodule "public/common"]
 	path = public/common
 	url = https://github.com/Perceptronics/percjs-common.git
+[submodule "public/netvizer"]
+	path = public/netvizer
+	url = https://github.com/Perceptronics/network_visualization_module.git
+	branch = ES5-Module-Convert
