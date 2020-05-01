@@ -30,8 +30,12 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.navElem.select(".x-axis").call(that.navXAxis);
 
-        that.networkTicks = that.displayTicks(that.topAlerts, "Network");
-        that.indivTicks = that.displayTicks(that.bottomAlerts, "Individual");
+        let [networkTicks, networkLines] = that.displayTicks(that.topAlerts, "Network");
+        let [indivTicks, indivLines] = that.displayTicks(that.bottomAlerts, "Individual");
+        that.networkTicks = networkTicks;
+        that.networkLines = networkLines;
+        that.indivTicks = indivTicks;
+        that.indivLines = indivLines;
     };
 
     function alertPostToColor(post) {
@@ -54,59 +58,95 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
 
     that.displayTicks = function (alert_infos, y_idx) {
         let graphBars = [];
+        let graphLines = [];
         for (let alertInfo of alert_infos) {
+            let highlightFollow = [];
             let clickOnAlert = () => {
                 timelineInteractionCallback.onAlertSelected(alertInfo["post_id"]);
-                let x = bgRect.attr("x");
-                let y = bgRect.attr("y");
-                that.highlightCircle
-                    .attr("cx", +x + 4)
-                    .attr("cy", +y + (that.y.bandwidth() / 2.0))
-                    .attr("display", "block");
-                that.highlightFollow = bgRect;
-            };
-            let bgRect = that.chart.append("rect")
-                .on("click", clickOnAlert)
-                .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
-                .attr("width", 8)
-                .attr("y", that.y(y_idx))
-                .attr("height", that.y.bandwidth())
-                .attr("fill", "white")
-                .attr("stroke-width", "1px")
-                .attr("stroke", "gray");
-            graphBars.push([bgRect, alertInfo]);
+                let x = highlightFollow[0].attr("x");
+                let topY = +highlightFollow[0].attr("y");
+                let bottomY = +highlightFollow[highlightFollow.length-1].attr("y") + (that.y.bandwidth() / 4.0);
 
-            that.navElem.append("rect")
-                .on("click", clickOnAlert)
-                .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
-                .attr("width", 5)
-                .attr("y", that.navY(y_idx))
-                .attr("height", that.navY.bandwidth())
-                .attr("fill", "white")
-                .attr("stroke-width", "1px")
-                .attr("stroke", "gray");
+                that.highlightCircle
+                    .attr("r", (bottomY - topY) + 10)
+                    .attr("cx", +x + 4)
+                    .attr("cy", topY + (bottomY - topY) / 2.0)
+                    .attr("display", "block");
+                that.highlightFollow = highlightFollow;
+            };
+            // let bgRect = that.chart.append("rect")
+            //     .on("click", clickOnAlert)
+            //     .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+            //     .attr("width", 8)
+            //     .attr("y", that.y(y_idx))
+            //     .attr("height", that.y.bandwidth())
+            //     .attr("fill", "white")
+            //     .attr("fill-opacity", "0.0");
+            // .attr("stroke-width", "1px")
+            // .attr("stroke", "gray");
+            // graphBars.push([bgRect, alertInfo]);
+
+            // that.navElem.append("rect")
+            //     .on("click", clickOnAlert)
+            //     .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
+            //     .attr("width", 5)
+            //     .attr("y", that.navY(y_idx))
+            //     .attr("height", that.navY.bandwidth())
+            //     .attr("fill", "white")
+            //     .attr("fill-opacity", "0.0");
+            // .attr("stroke-width", "1px")
+            // .attr("stroke", "gray");
 
             let i = 0;
             for (let threatFactor of Object.keys(threatColorMap)) {
+                let leftX = that.graphXData(new Date(alertInfo["created_day"] * 1000));
+                let navLeftX = that.navXData(new Date(alertInfo["created_day"] * 1000));
+                let navTopY = that.navY(y_idx) + ((that.navY.bandwidth() / 4.0) * i);
+                let topY = that.y(y_idx) + ((that.y.bandwidth() / 4.0) * i);
+
+                // if (i < Object.keys(threatColorMap).length - 1) {
+                //     let line = that.chart.append("line")
+                //         .attr("x1", leftX)
+                //         .attr("y1", topY + (that.y.bandwidth() / 4.0))
+                //         .attr("x2", leftX + 8)
+                //         .attr("y2", topY + (that.y.bandwidth() / 4.0))
+                //         .attr("stroke", "black")
+                //         .attr("stroke-width", "1px");
+                //     graphLines.push([line, alertInfo]);
+                //
+                //     that.navElem.append("line")
+                //         .attr("x1", navLeftX)
+                //         .attr("y1", navTopY + (that.navY.bandwidth() / 4.0))
+                //         .attr("x2", navLeftX + 5)
+                //         .attr("y2", navTopY + (that.navY.bandwidth() / 4.0))
+                //         .attr("stroke", "black")
+                //         .attr("stroke-width", "1px");
+                // }
+
                 if (hasThreatFactorColor(alertInfo, threatFactor) == null) {
                     i++;
                     continue;
                 }
                 let subRect = that.chart.append("rect")
                     .on("click", clickOnAlert)
-                    .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
+                    .attr("x", leftX)
                     .attr("width", 8)
-                    .attr("y", that.y(y_idx) + ((that.y.bandwidth() / 4.0) * i))
+                    .attr("y", topY)
                     .attr("height", that.y.bandwidth() / 4.0)
-                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor));
+                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor))
+                    .attr("stroke-width", "1px")
+                    .attr("stroke", "gray");
                 graphBars.push([subRect, alertInfo]);
+                highlightFollow.push(subRect);
 
                 that.navElem.append("rect")
-                    .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
+                    .attr("x", navLeftX)
                     .attr("width", 5)
-                    .attr("y", that.navY(y_idx) + ((that.navY.bandwidth() / 4.0) * i))
+                    .attr("y", navTopY)
                     .attr("height", that.navY.bandwidth() / 4.0)
-                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor));
+                    .attr("fill", hasThreatFactorColor(alertInfo, threatFactor))
+                    .attr("stroke-width", "1px")
+                    .attr("stroke", "gray");
                 i++;
             }
 
@@ -138,10 +178,10 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
             //     .attr("fill", alertPostToColor(alertInfo));
         }
 
-        return graphBars;
+        return [graphBars, graphLines];
     };
 
-    that.updateTicks = function (ticks) {
+    that.updateTicks = function (ticks, lines) {
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.navElem.select(".x-axis").call(that.navXAxis);
 
@@ -151,12 +191,15 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         for (let [graphBar, alertInfo] of ticks) {
             graphBar.attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
         }
-        if (that.highlightCircle != null && that.highlightFollow != null) {
-            let x = that.highlightFollow.attr("x");
-            let y = that.highlightFollow.attr("y");
+        for (let [graphLine, alertInfo] of lines) {
+            let leftX = that.graphXData(new Date(alertInfo["created_day"] * 1000));
+            graphLine.attr("x1", leftX);
+            graphLine.attr("x2", leftX + 8);
+        }
+        if (that.highlightCircle != null && that.highlightFollow != null && that.highlightFollow.length !== 0) {
+            let x = that.highlightFollow[0].attr("x");
             that.highlightCircle
                 .attr("cx", +x + 4)
-                .attr("cy", +y + (that.y.bandwidth() / 2.0))
         }
     };
 
@@ -297,8 +340,8 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         that.graphRootSvg.select(".zoom").call(that.zoom.transform, d3.zoomIdentity
             .scale(that.chartWidth / (s[1] - s[0]))
             .translate(-s[0], 0));
-        that.updateTicks(that.networkTicks);
-        that.updateTicks(that.indivTicks);
+        that.updateTicks(that.networkTicks, that.networkLines);
+        that.updateTicks(that.indivTicks, that.indivLines);
     };
 
     this.zoomed = function () {
@@ -307,8 +350,8 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         that.graphXData.domain(t.rescaleX(that.navXData).domain());
         that.axesElem.select(".x-axis").call(that.graphXAxis);
         that.navElem.select(".brush").call(that.brush.move, that.graphXData.range().map(t.invertX, t));
-        that.updateTicks(that.networkTicks);
-        that.updateTicks(that.indivTicks);
+        that.updateTicks(that.networkTicks, that.networkLines);
+        that.updateTicks(that.indivTicks, that.indivLines);
     };
 
     that.initGraph(top_alerts, bottom_alerts);

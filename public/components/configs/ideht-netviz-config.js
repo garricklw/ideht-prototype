@@ -14,7 +14,10 @@ export function idehtNetvizConfig(nodeIdToHsv, links, userOfInterest, nodeSelect
     let defaultLineDraw = IdehtNetvizConfigMods.lineFunc(links);
 
     let config = {
-        graph_props: {},
+        graph_props: {
+            node_repulsion_strength: -3000,
+            max_repulsion_distance: 600,
+        },
 
         node_draw: {
             func: defaultNodeDraw,
