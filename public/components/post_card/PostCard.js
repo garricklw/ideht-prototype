@@ -10,7 +10,8 @@ export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
     const visibleRows = 3;
     const dsToIcon = {
         "GAB": "images/gab_icon.png",
-        "REDDIT": "images/reddit_icon.png"
+        "REDDIT": "images/reddit_icon.png",
+        "TWITTER": "images/circle-twitter-512.png"
     };
 
     let widget = htmlDepends.dependencies["PostCard"];
@@ -62,7 +63,7 @@ export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
         threatFactorList.appendChild(threatCard("Proximity", proximityColor, "white"))
     }
     if (alertPost["is_installation_relevant"] === true) {
-        threatFactorList.appendChild(threatCard("Installation", installationColor))
+        threatFactorList.appendChild(threatCard("Installation", installationColor, "white"))
     }
     if (alertPost["is_radical"] === true) {
         threatFactorList.appendChild(threatCard("Radical", radicalColor))
@@ -70,6 +71,25 @@ export function PostCard(parentNode, htmlDepends, alertPost, socialPost) {
     if (alertPost["is_violent"] === true) {
         threatFactorList.appendChild(threatCard("Violence", violenceColor, "white"))
     }
+
+    let card = that.shadow.getElementById("post-card");
+    let left = card.offsetLeft;
+    let top = card.offsetTop;
+    let rootNode = that.shadow.getRootNode({composed: true}).documentElement;
+    that.shadow.getElementById("feedback-icon").addEventListener("click", (ev) => {
+        let popup = that.shadow.getElementById("feedback-popup").cloneNode(true);
+        popup.style.left = ev.clientX.toString() - 15;
+        popup.style.top = ev.clientY.toString() - 15;
+        popup.style.display = "block";
+        rootNode.appendChild(popup);
+
+        popup.querySelector("#feedback-submit").addEventListener("click", () => {
+            popup.parentNode.removeChild(popup);
+        });
+        popup.querySelector("#feedback-cancel").addEventListener("click", () => {
+            popup.parentNode.removeChild(popup);
+        });
+    });
 
     function threatCard(text, color = "lightgray", textColor = "black") {
         let threatCard = document.createElement("div");

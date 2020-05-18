@@ -1,5 +1,5 @@
-<link rel="stylesheet" href="../../common/stylesheets/common.css">
-<link rel="stylesheet" href="../../common/stylesheets/tooltip.css">
+<link rel="stylesheet" href="common/stylesheets/common.css">
+<link rel="stylesheet" href="common/stylesheets/tooltip.css">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <style>
@@ -19,7 +19,7 @@
 </style>
 
 <body class="bodyDefault inheritSize">
-<div id="post-card" class="inheritSize" style="position: relative">
+<div id="post-card" class="rel inheritSize" style="position: relative">
     <div class="flexhorizont" style="height: 60px">
         <div id="account-image-box">
             <i id="account-image-icon" class="material-icons">
@@ -43,6 +43,31 @@
     <div id="threat-factor-list" class="flexhorizont" style="position: absolute; bottom: 3px; left: 3px">
 
     </div>
+    <div class="abs" style="bottom: 5px; right: 5px">
+        <img id="feedback-icon" class="clickable" src="images/icons8-comments-24.png"/>
+    </div>
 </div>
 
+<div id="feedback-popup" class="abs notRendered popup" style="width: 275px">
+    <div><b>This post contains:</b>(select all that apply)</div>
+<!--    <div style="margin-left: 15px"></div>-->
+    <div class="flexhorizont">
+        <div style="width: 80%; margin-left: 7px">
+            <label for="install-check">Installation Relevance</label>
+            <label for="proximity-check">Proximity to Installation</label>
+            <label for="radical-check">Radicalized Language</label>
+            <label for="violence-check">Threats of Violence</label>
+        </div>
+        <div style="width: 20%">
+            <input type="checkbox" id="install-check" name="install-check" value="is_installation_relevant">
+            <input type="checkbox" id="proximity-check" name="proximity-check" value="is_proximal">
+            <input type="checkbox" id="radical-check" name="radical-check" value="is_radical">
+            <input type="checkbox" id="violence-check" name="violence-check" value="is_violent">
+        </div>
+    </div>
+    <div>
+        <button id="feedback-cancel">Cancel</button>
+        <button id="feedback-submit" class="textSpacer">Submit</button>
+    </div>
+</div>
 </body>

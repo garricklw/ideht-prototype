@@ -1,4 +1,4 @@
-import {DataFetchUtils} from "../../common/utils/DataFetchUtils.js";
+import {DataFetchUtils} from "../../common/utils/DataFetchUtils.mjs";
 import {WordCloud} from "../../common/widgets/word_cloud/WordCloud.js";
 
 export function GalleryView(parentNode, htmlDepends) {

@@ -15,8 +15,8 @@ export function idehtNetvizConfig(nodeIdToHsv, links, userOfInterest, nodeSelect
 
     let config = {
         graph_props: {
-            node_repulsion_strength: -3000,
-            max_repulsion_distance: 600,
+            node_repulsion_strength: -5000,
+            max_repulsion_distance: 5000,
         },
 
         node_draw: {

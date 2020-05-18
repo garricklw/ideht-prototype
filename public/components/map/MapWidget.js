@@ -31,8 +31,8 @@ export function MapWidget(parentNodeId, focusBB, locationObjs, facilityObjs, use
 
     that.widget = new Cesium.Viewer(parentNodeId, {
         sceneMode: Cesium.SceneMode.SCENE2D,
-        imageryProvider: osm,
-        // imageryProvider: new Cesium.IonImageryProvider({assetId: 4}),
+        // imageryProvider: osm,
+        imageryProvider: new Cesium.IonImageryProvider({assetId: 4}),
         animation: false,
         baseLayerPicker: false,
         homeButton: false,

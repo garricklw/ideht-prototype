@@ -23,7 +23,11 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
         noData.textContent = "No Data";
         that.shadow.getElementById("graph-svg").remove();
         that.shadow.getElementById("timeline-root").appendChild(noData);
-        return;
+        return ({
+            clearHighlight: () => {
+
+            }
+        });
     }
 
     this.displayData = function () {
@@ -74,28 +78,6 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
                     .attr("display", "block");
                 that.highlightFollow = highlightFollow;
             };
-            // let bgRect = that.chart.append("rect")
-            //     .on("click", clickOnAlert)
-            //     .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
-            //     .attr("width", 8)
-            //     .attr("y", that.y(y_idx))
-            //     .attr("height", that.y.bandwidth())
-            //     .attr("fill", "white")
-            //     .attr("fill-opacity", "0.0");
-            // .attr("stroke-width", "1px")
-            // .attr("stroke", "gray");
-            // graphBars.push([bgRect, alertInfo]);
-
-            // that.navElem.append("rect")
-            //     .on("click", clickOnAlert)
-            //     .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
-            //     .attr("width", 5)
-            //     .attr("y", that.navY(y_idx))
-            //     .attr("height", that.navY.bandwidth())
-            //     .attr("fill", "white")
-            //     .attr("fill-opacity", "0.0");
-            // .attr("stroke-width", "1px")
-            // .attr("stroke", "gray");
 
             let i = 0;
             for (let threatFactor of Object.keys(threatColorMap)) {
@@ -103,25 +85,6 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
                 let navLeftX = that.navXData(new Date(alertInfo["created_day"] * 1000));
                 let navTopY = that.navY(y_idx) + ((that.navY.bandwidth() / 4.0) * i);
                 let topY = that.y(y_idx) + ((that.y.bandwidth() / 4.0) * i);
-
-                // if (i < Object.keys(threatColorMap).length - 1) {
-                //     let line = that.chart.append("line")
-                //         .attr("x1", leftX)
-                //         .attr("y1", topY + (that.y.bandwidth() / 4.0))
-                //         .attr("x2", leftX + 8)
-                //         .attr("y2", topY + (that.y.bandwidth() / 4.0))
-                //         .attr("stroke", "black")
-                //         .attr("stroke-width", "1px");
-                //     graphLines.push([line, alertInfo]);
-                //
-                //     that.navElem.append("line")
-                //         .attr("x1", navLeftX)
-                //         .attr("y1", navTopY + (that.navY.bandwidth() / 4.0))
-                //         .attr("x2", navLeftX + 5)
-                //         .attr("y2", navTopY + (that.navY.bandwidth() / 4.0))
-                //         .attr("stroke", "black")
-                //         .attr("stroke-width", "1px");
-                // }
 
                 if (hasThreatFactorColor(alertInfo, threatFactor) == null) {
                     i++;
@@ -149,33 +112,6 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
                     .attr("stroke", "gray");
                 i++;
             }
-
-            // let graphBar = that.chart.append("rect")
-            //     .on("mouseup", () => {
-            //         timelineInteractionCallback.onAlertSelected(alertInfo["post_id"]);
-            //         let rect = d3.event.currentTarget;
-            //         let x = rect.attributes["x"].value;
-            //         let y = rect.attributes["y"].value;
-            //         that.highlightCircle
-            //             .attr("cx", +x + 4)
-            //             .attr("cy", +y + (that.y.bandwidth() / 2.0))
-            //             .attr("display", "block");
-            //         that.highlightFollow = rect;
-            //     })
-            //     .attr("class", "bar" + y_idx)
-            //     .attr("x", that.graphXData(new Date(alertInfo["created_day"] * 1000)))
-            //     .attr("width", 8)
-            //     .attr("y", that.y(y_idx))
-            //     .attr("height", that.y.bandwidth())
-            //     .attr("fill", alertPostToColor(alertInfo));
-            // graphBars.push([graphBar, alertInfo]);
-
-            // that.navElem.append("rect")
-            //     .attr("x", that.navXData(new Date(alertInfo["created_day"] * 1000)))
-            //     .attr("width", 5)
-            //     .attr("y", that.navY(y_idx))
-            //     .attr("height", that.navY.bandwidth())
-            //     .attr("fill", alertPostToColor(alertInfo));
         }
 
         return [graphBars, graphLines];
@@ -276,7 +212,10 @@ export function Timeline(parentNode, htmlDepends, top_alerts, bottom_alerts, tim
                 xExtent[1] = otherXExtent[1];
             }
         }
-        xExtent[1] = new Date(xExtent[1].getTime() + (1000 * 60 * 60 * 24));
+        let timePadding = ((xExtent[1].getTime() - xExtent[0].getTime()) * .05);
+        xExtent[0] = new Date(xExtent[0].getTime() - timePadding);
+        xExtent[1] = new Date(xExtent[1].getTime() + timePadding);
+        // xExtent[1] = new Date(xExtent[1].getTime());
 
         that.graphXData = d3.scaleTime().range([0, that.chartWidth]);
         that.navXData = d3.scaleTime().range([0, that.chartWidth]);

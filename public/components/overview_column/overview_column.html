@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="stylesheets/common.css">
+<link rel="stylesheet" href="common/stylesheets/common.css">
 <style>
     #user-overview-box {
         padding-left: 10px;
@@ -139,13 +139,25 @@
     <div><b class="cardH1Text headerMargins">Accounts</b></div>
     <div class="accountBox">
         <div class="flexhorizont">
-            <div>
-                <div>Handle: @lkusa</div>
-                <div>Platform: Gab</div>
-                <div>Created: 03/30/2017</div>
-                <div>Bio: Doctorate in Cliterature.</div>
+            <div style="width: 72%;">
+                <div class="flexhorizont">
+                    <div>Handle:</div>
+                    <div id="account-list-handle" class="textSpacer vertAlignMiddle"></div>
+                </div>
+                <div class="flexhorizont">
+                    <div>Platform:</div>
+                    <div id="account-list-platform" class="textSpacer vertAlignMiddle"></div>
+                </div>
+                <div class="flexhorizont">
+                    <div>Created:</div>
+                    <div id="account-list-created" class="textSpacer vertAlignMiddle">Not Provided</div>
+                </div>
+                <div class="flexhorizont">
+                    <div>Bio:</div>
+                    <div id="account-list-bio" class="textSpacer vertAlignMiddle">Not Provided</div>
+                </div>
             </div>
-            <img src="https://gab.com/media/user/58c1925fdf947.JPG" style="width: 28%;">
+            <img id="account-list-icon" src="https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png" style="width: 28%;">
         </div>
     </div>
 

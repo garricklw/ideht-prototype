@@ -14,8 +14,14 @@
     border-right: 1px solid lightslategrey
 }
 
+.postListHeader {
+    border-bottom: 2px solid gray;
+    border-right: 2px solid gray;
+    padding: 1%
+}
+
 #post-list {
-    height: 100%;
+    height: 95%;
     border-right: 2px groove darkgrey;
     overflow-x: hidden;
 }
@@ -25,7 +31,7 @@
 }
 
 .headerMargins {
-    margin-top: 3px;
+    margin-top: 3.4px;
     margin-left: 10px;
 }
 
@@ -36,4 +42,24 @@
 
 .headerLabelText {
     font-size: 16px;
+}
+
+.popup {
+    border: 2px solid black;
+    box-shadow: 5px 5px 10px 3px darkgray;
+    background-color: white;
+    padding: 5px;
+    z-index: 10000;
+}
+
+.popup label {
+    display: block;
+    height: 18px;
+    margin: 0 0 0 0;
+}
+
+.popup input {
+    display: block;
+    height: 17px;
+    margin: 1.5px 0 0 0;
 }

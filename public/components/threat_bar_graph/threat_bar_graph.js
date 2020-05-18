@@ -9,6 +9,7 @@ import {networkColor} from "../../javascripts/ideht_colors.js";
 import {individualColor} from "../../javascripts/ideht_colors.js";
 import {installationColor, proximityColor, radicalColor, violenceColor} from "../../javascripts/ideht_colors.js";
 import {SizingUtils} from "../../common/utils/SizingUtils.js";
+import {D3Utils} from "../../javascripts/D3Utils.js";
 
 export function ThreatBarGraph(parentNode, htmlDepends, indiv_data, network_data) {
     let that = this;
@@ -41,8 +42,8 @@ export function ThreatBarGraph(parentNode, htmlDepends, indiv_data, network_data
                 "translate(" + margin.left + "," + margin.top + ")");
 
         // Scale the range of the data in the domains
-        x.domain(["Proximity", "Installation", "Radical", "Violence"]);
-        y.domain([0, d3.max(Object.values(indiv_data))]);
+        x.domain(["Installation", "Proximity", "Radical", "Violence"]);
+        y.domain([0, 100]);
         netY.domain(y.domain());
 
         let tooltip = d3.select(that.shadow).select("#bar-chart").append("div")

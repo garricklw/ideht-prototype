@@ -3,12 +3,12 @@
 <head>
     <title>Post List Demo</title>
     <link rel="stylesheet" href="./common/stylesheets/common.css">
-    <link rel="stylesheet" href="stylesheets/alert_dashboard.css">
+    <link rel="stylesheet" href="./stylesheets/alert_dashboard.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <script src="https://d3js.org/d3.v4.js"></script>
     <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
-    <script src="common/widgets/word_cloud/d3.layout.cloud.js"></script>
+    <script src="./common/widgets/word_cloud/d3.layout.cloud.js"></script>
 
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.66/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
@@ -21,7 +21,9 @@
         <div class="headerBox" style="width: 100%; height: 9%;">
             <div class="flexhorizont headerMargins">
                 <div class="headerH1Text"><b>Threat - Data Points</b></div>
-                <div class="headerLabelText vertAlignMiddle" style="margin-left: 15px">Filters:</div>
+            </div>
+            <div class="flexhorizont headerMargins">
+                <div class="headerLabelText vertAlignMiddle">Filters:</div>
                 <select id="threat-factor-select" class="textSpacer vertAlignMiddle">
                     <option value="all">All Threats</option>
                     <option value="is_proximal">Proximity</option>
@@ -34,12 +36,10 @@
                     <option value="true">Individual</option>
                     <option value="false">Network</option>
                 </select>
-            </div>
-            <div class="flexhorizont headerMargins">
-                <div class="headerLabelText">Sort by:</div>
+                <div class="headerLabelText textSpacer">Sort by:</div>
                 <select id="sort-by-select" class="textSpacer vertAlignMiddle">
-                    <option value="created_day">Latest</option>
                     <option value="max_threat">Max Threat</option>
+                    <option value="created_day">Latest</option>
                     <option value="proximity_val">Proximity</option>
                     <option value="install_relev_val">Installation</option>
                     <option value="radical_val">Radicalization</option>
@@ -53,22 +53,23 @@
         <div class="flexhorizont" style="width: 100%; height: 93%;">
             <div class="rel" style="width: 25%;">
                 <div id="post-list" class="rel vertScroll bottom"></div>
-                <div id="post-list-subfilter-box" class="abs vertScroll middle overlap notRendered">
-                    <div style="height: 5%; border-bottom: 2px solid gray">
-                        <div style="padding: 3%">
+                <div id="post-list-subfilter-box" class="abs middle overlap notRendered">
+                    <div class="postListHeader" style="height: 5%;">
+                        <div style="padding:3%">
                             <button id="post-filter-return" class="vertAlignMiddle">
-                                <- Return to Previous Filter
+                                <- Return to All Posts
                             </button>
                         </div>
-                        <div id="post-list-subfilter" style="height: 95%"></div>
                     </div>
+                    <div id="post-list-subfilter" class="vertScroll" style="height: 95%"></div>
                 </div>
                 <div id="post-gallery-box" class="abs vertScroll top overlap notRendered"></div>
             </div>
             <div style="width: 75%">
                 <div class="flexhorizont" style="height: 67%">
-                    <div id="map-container" style="width: 100%"></div>
-                    <div style="width: 100%">
+                    <div id="map-container"
+                         style="width: 100%; border-right: 1px solid lightslategrey; border-bottom: 1px solid lightslategrey"></div>
+                    <div style="width: 100%; border-bottom: 1px solid lightslategrey">
                         <canvas id="network-container" style="width: 100%; height: 100%"></canvas>
                     </div>
                 </div>
@@ -86,13 +87,12 @@
     import {Timeline} from "./components/timeline/timeline.js";
     import {OverviewColumn} from "./components/overview_column/overview_column.js";
     import {IdehtServiceCalls} from "./javascripts/IdehtServiceCalls.js";
-    import {DataFetchUtils} from "./common/utils/DataFetchUtils.js";
+    import {DataFetchUtils} from "./common/utils/DataFetchUtils.mjs";
     import {HomePageUtils} from "./javascripts/HomePageUtils.js";
     import {GalleryView} from "./components/gallery_view/gallery_view.js";
     import {LoadHtmlDepends} from "./common/utils/LoadHtmlDepends.js";
     import {idehtNetvizConfig} from "./components/configs/ideht-netviz-config.js";
     import {NetVizer} from "./netvizer/src/netvizer.js";
-    import {IdehtNetvizConfigMods} from "./components/configs/ideht-netviz-config.js";
 
     let overviewDiv = document.getElementById("overview-container");
     let postListDiv = document.getElementById("post-list");
@@ -111,6 +111,12 @@
         "components/overview_column/overview_column.html": "OverviewColumn",
         "components/gallery_view/gallery_view.html": "GalleryView",
     }, onDependsLoad);
+
+    let urlParams = new URLSearchParams(window.location.search);
+    let alert_idx = 1;
+    if (urlParams.has("alertNum")) {
+        alert_idx = parseInt(urlParams.get("alertNum"));
+    }
 
     function peekAtPostIdsFunc(alert_id, pageOffset, changingMainList, passThroughFunc) {
         return (posts) => {
@@ -172,13 +178,15 @@
     let netvizer = null;
     let netvizConfig = null;
 
-    let sortBy = "created_day";
+    let sortBy = "max_threat";
     let factorFilter = null;
     let indivFilter = null;
     let locationFilter = null;
     let postFilter = null;
     let userFilter = null;
     let filteredPostIds = null;
+    let filteredPageFunc = null;
+
     let mainPostListIds = null;
 
     function registerGalleryToggle(htmlLoader, alert_id, wordFreqs) {
@@ -207,9 +215,11 @@
         let indivSelect = document.getElementById("indiv-select");
 
         let alert_id = alertInfo["alert_id"];
-        let user_info = alertInfo["user_infos"]["GAB"][0];
+        let user_infos = alertInfo["user_infos"];
+        let user_info = user_infos[Object.keys(user_infos)[0]][0];
         let user_id = user_info["id"];
-        let dataset = alertInfo["datasets"]["GAB"];
+        let datasets = alertInfo["datasets"];
+        let dataset = datasets[Object.keys(datasets)[0]];
 
         factorSelect.addEventListener("change", () => {
             if (factorSelect.value === "all") {
@@ -231,14 +241,23 @@
             sortBy = sortSelect.value;
             let postFetchFunc = pageThroughPostsFunc(alert_id, user_id, dataset);
             postListDiv = PostCard.refreshPostList(htmlLoader, postListDiv, postFetchFunc);
+            if (filteredPageFunc != null) {
+                postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, filteredPageFunc)
+            }
         });
     }
 
     function showHidePostListFilter(alert_id, isShow) {
+        let factorSelect = document.getElementById("threat-factor-select");
+        let indivSelect = document.getElementById("indiv-select");
         let postListFilterBox = document.getElementById("post-list-subfilter-box");
         if (isShow) {
+            factorSelect.setAttribute("disabled", "");
+            indivSelect.setAttribute("disabled", "");
             postListFilterBox.style.display = "block";
         } else {
+            factorSelect.removeAttribute("disabled");
+            indivSelect.removeAttribute("disabled");
             postListFilterBox.style.display = "none";
             locationFilter = null;
             postFilter = null;
@@ -264,8 +283,8 @@
                     showHidePostListFilter(alert_id, false);
                 } else {
                     postFilter = [postId];
-                    let postFunc = pageThroughPostIdsFunc(alert_id, dataset);
-                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
+                    filteredPageFunc = pageThroughPostIdsFunc(alert_id, dataset);
+                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, filteredPageFunc);
                     showHidePostListFilter(alert_id, true);
                 }
             }
@@ -312,13 +331,13 @@
     }
 
     function nodeSelectCallback(htmlLoader, alert_id, dataset) {
-        timelineWidget.clearHighlight();
-        mapWidget.clearHighlight();
         return (clickedNodeId) => {
+            timelineWidget.clearHighlight();
+            mapWidget.clearHighlight();
             if (clickedNodeId !== null) {
                 userFilter = userMap[clickedNodeId];
-                let postDataFunc = pageThroughUserIdFunc(alert_id, dataset);
-                postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postDataFunc);
+                filteredPageFunc = pageThroughUserIdFunc(alert_id, dataset);
+                postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, filteredPageFunc);
                 showHidePostListFilter(alert_id, true);
             } else {
                 console.log("cleared network selection");
@@ -402,17 +421,23 @@
                     showHidePostListFilter(alert_id, false);
                 } else {
                     locationFilter = locationId;
-                    let postFunc = pageThroughLocationPostsFunc(alert_id, dataset);
-                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, postFunc);
+                    filteredPageFunc = pageThroughLocationPostsFunc(alert_id, dataset);
+                    postListFilterDiv = PostCard.refreshPostList(htmlLoader, postListFilterDiv, filteredPageFunc);
                     showHidePostListFilter(alert_id, true);
                 }
             }
         })
     }
 
+    function removeFacility(locations, facilities) {
+        let facilityIds = facilities.map(fac => fac.id);
+        return locations.filter(loc => !(facilityIds.includes(loc["id"])))
+    }
+
     function refreshMap(htmlLoader, alertInfo) {
         let alert_id = alertInfo["alert_id"];
-        let dataset = alertInfo["datasets"]["GAB"];
+        let datasets = alertInfo["datasets"];
+        let dataset = datasets[Object.keys(datasets)[0]];
 
         if (mapWidget != null) {
             if (factorFilter != null) {
@@ -424,31 +449,33 @@
                         }
                     }
                 }
-                mapWidget.render2dLocations(filtLocations, facilities);
+                mapWidget.render2dLocations(removeFacility(filtLocations, facilities), facilities);
             } else {
-                mapWidget.render2dLocations(locations, facilities);
+                mapWidget.render2dLocations(removeFacility(locations, facilities), facilities);
             }
             return;
         }
 
-        let shermanOaksBB = [-118.6, 33.66, -118.0, 34.2];
+        let facilityBB = alertInfo["facility_bb"];
         IdehtServiceCalls.fetchLocationData(alertInfo, null, ([locs, facs]) => {
             locations = Object.keys(locs).map((x) => JSON.parse(x));
             facilities = facs;
-            mapWidget = new MapWidget(mapDiv, shermanOaksBB, locations, facilities,
+            mapWidget = new MapWidget(mapDiv, facilityBB, removeFacility(locations, facilities), facilities,
                 mapInteractionCallback(htmlLoader, alert_id, dataset));
         });
     }
 
     function displayAlertData(htmlLoader, alertInfo) {
         let alert_id = alertInfo["alert_id"];
-        let user_info = alertInfo["user_infos"]["GAB"][0];
+        let user_infos = alertInfo["user_infos"];
+        let user_info = user_infos[Object.keys(user_infos)[0]][0];
         let user_id = user_info["id"];
-        let dataset = alertInfo["datasets"]["GAB"];
+        let datasets = alertInfo["datasets"];
+        let dataset = datasets[Object.keys(datasets)[0]];
 
         if (overviewWidget == null) {
             IdehtServiceCalls.fetchThreatOverviewCounts(alert_id, user_id, ([indiv_counts, network_counts]) => {
-                overviewWidget = new OverviewColumn(overviewDiv, htmlLoader, user_info, alertInfo["creation_date"], indiv_counts, network_counts);
+                overviewWidget = new OverviewColumn(overviewDiv, htmlLoader, user_infos, alertInfo["creation_date"], indiv_counts, network_counts);
             });
         }
 
@@ -475,7 +502,7 @@
             if (alertList.length === 0) {
                 // TODO show somewhere on the screen
             } else {
-                let firstAlert = alertList[1];
+                let firstAlert = alertList[alert_idx];
 
                 registerFilterEvents(htmlLoader, firstAlert);
                 displayAlertData(htmlLoader, firstAlert, "created_day");

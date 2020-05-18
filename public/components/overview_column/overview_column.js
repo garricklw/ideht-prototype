@@ -1,16 +1,19 @@
 import {ThreatBar} from "../threat_bar/ThreatBar.js";
 import {IdehtServiceCalls} from "../../javascripts/IdehtServiceCalls.js";
 import {ThreatBarGraph} from "../threat_bar_graph/threat_bar_graph.js";
-import {DataFetchUtils} from "../../common/utils/DataFetchUtils.js";
+import {DataFetchUtils} from "../../common/utils/DataFetchUtils.mjs";
 import {SizingUtils} from "../../common/utils/SizingUtils.js";
 
-export function OverviewColumn(parentNode, htmlDepends, user_info, created_date, indiv_counts, network_counts) {
+export function OverviewColumn(parentNode, htmlDepends, dataSourceToUsers, created_date, indiv_counts, network_counts) {
 
     let that = this;
 
     htmlDepends.loadDepends({
         "components/threat_bar_graph/threat_bar_graph.html": "ThreatBarGraph",
     }, () => {
+        let [data_source, user_infos] = Object.entries(dataSourceToUsers)[0];
+        let user_info = user_infos[0];
+
         that.shadow = htmlDepends.attachShadow("OverviewColumn", parentNode);
 
         that.shadow.getElementById("user-name").textContent = "@" + user_info["name"];
@@ -26,6 +29,14 @@ export function OverviewColumn(parentNode, htmlDepends, user_info, created_date,
         SizingUtils.runOnInit(barGraphDiv, () => {
             new ThreatBarGraph(barGraphDiv, htmlDepends, indiv_counts, network_counts);
         });
+
+        that.shadow.getElementById("user-identifier").textContent = user_info["hidden_name"];
+        that.shadow.getElementById("platforms-list").textContent = data_source.toLowerCase();
+        that.shadow.getElementById("handles-list").textContent = "@" + user_info["name"];
+
+        that.shadow.getElementById("account-list-platform").textContent = data_source.toLowerCase();
+        that.shadow.getElementById("account-list-handle").textContent = "@" + user_info["name"];
+        that.shadow.getElementById("account-list-icon").src = user_info["image_url"];
 
         let overlapPane = that.shadow.getElementById("overlap-content");
 
